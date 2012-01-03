@@ -184,8 +184,8 @@ rayDeltas (Ray _ d) = d
 -- 
 type Vector2D = (Float,Float) 
 
-data Ray     = Ray  Vector2D Vector2D -- Position direction representation    
-data Line    = Line Vector2D Vector2D -- position direction representation 
+data Ray     = Ray  Vector2D Vector2D -- Point direction representation    
+data Line    = Line Vector2D Vector2D -- point direction representation 
 
 
 distance :: Vector2D -> Vector2D -> Float 
