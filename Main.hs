@@ -129,15 +129,15 @@ dist (xd,yd) = max 1 (sqrt (xd*xd+yd*yd))
 -}
 ---------------------------------------------------------------------------- 
 -- castRay2 
-castRay2 :: Array2D Int Int -> Ray -> (Float,Int)
-castRay2 world ray = 
+castRay2 :: Array2D Int Int -> (Int,Ray) -> (Float,Int)
+castRay2 world (id,ray) =  -- the ID is for debuging 
   if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
-  then (200,0)
+  then (200,1)
   else                                                                         
     if (value > 0)  
     then (dist,value) 
     else 
-      let (d,v) = castRay2 world (Ray (px ,py) (rayDeltas ray))
+      let (d,v) = castRay2 world (id,(Ray (px ,py) (rayDeltas ray)))
       in  (dist+d,v)
         
   where 
@@ -152,8 +152,11 @@ castRay2 world ray =
                   
     -- For some reason adding small amounts here (to the x_line and y_line direction)               
     -- has same effect as the changes described in the "intersect" function
-    x_line = Line (fromIntegral grid_x,0) (0.001,1.001) 
-    y_line = Line (0,fromIntegral grid_y) (1.001,0.001)  
+    x_line = Line (fromIntegral grid_x,0) (0.0,1.0) 
+    y_line = Line (0,fromIntegral grid_y) (1.0,0.0)  
+    
+    -- Does the intersection code give wrong results for 
+    -- vertical and horizontal lines ? 
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
     
@@ -168,7 +171,7 @@ castRay2 world ray =
           in if d1 < d2 
              then (p,d1) 
              else (q,d2) 
-    value = world !! (floor (px / 64),floor (py / 64))
+    value = trace (show (id,(floor px `div` 64), (floor py `div` 64))) $ world !! (floor px `div` 64, floor py `div` 64)
      
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
@@ -211,17 +214,17 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0
 convertLine (x1, y1) (x2, y2) = (a,b,c) 
   where 
     
-    a = y2 
-    b = -x2
-    c = a*x1+b*y1     
+    --a = y2 
+    --b = -x2
+    --c = a*x1+b*y1     
     
     --Strange. I think above and below are "equal" 
     --but using the above leads to infinite loop "somewhere"
     --  + The loop is in CastRay2 
      
-    --a = (y1+y2) - y1  
-    --b = x1 - (x1+x2)  
-    --c = a*x1+b*y1     
+    a = (y1+y2) - y1  
+    b = x1 - (x1+x2)  
+    c = a*x1+b*y1     
    
 
 
@@ -241,7 +244,7 @@ renderView world px py angle surf =
     
     rays' = map (\r -> (cos r,sin r)) rays
     rays''  = map (\deltas -> Ray (px,py) deltas) rays'  
-    results = map (castRay2 world) rays''   
+    results = map (castRay2 world) (zip [0..] rays'')   
 
 -- draw a single column into surf
 renderCol surf ((dist,i),c) = 
