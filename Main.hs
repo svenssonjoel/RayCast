@@ -177,7 +177,7 @@ castRay2 world (id,ray) =  -- the ID is for debuging
           in if d1 < d2 
              then (p,d1) 
              else (q,d2) 
-    value = trace (show (id,(floor px `div` 64), (floor py `div` 64))) $ world !! (floor px `div` 64, floor py `div` 64)
+    value = trace (show (id,(floor px `mod` 64), (floor py `mod` 64))) $ world !! (floor px `div` 64, floor py `div` 64)
      
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
