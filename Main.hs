@@ -37,6 +37,8 @@ import Data.Array
 import Data.Word
 
 import SDLUtils 
+
+import Debug.Trace
  
 
 ----------------------------------------------------------------------------
@@ -129,23 +131,29 @@ dist (xd,yd) = max 1 (sqrt (xd*xd+yd*yd))
 -- castRay2 
 castRay2 :: Array2D Int Int -> Ray -> (Float,Int)
 castRay2 world ray = 
-  if value > 0 
-  then (dist,value) 
-  else 
-    let (d,v) = castRay2 world (Ray (px,py) (rayDeltas ray))
-    in  if (dist > 1000) 
-        then (1000,1) -- just return something 
-        else (dist+d,v)
+  if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
+  then (200,0)
+  else                                                                         
+    if (value > 0)  
+    then (dist,value) 
+    else 
+      let (d,v) = castRay2 world (Ray (px ,py) (rayDeltas ray))
+      in  (dist+d,v)
         
   where 
+    -- TODO: grid_x and grid_y is problematic in this setting
+    -- because of how I use 
     grid_x = if (posRayDx ray) 
              then ((floor (rayX ray) :: Int) .&. 0xffc0) + 64
              else ((floor (rayX ray) :: Int) .&. 0xffc0) - 1
     grid_y = if (posRayDy ray) 
              then ((floor (rayY ray) :: Int) .&. 0xffc0) + 64
              else ((floor (rayY ray) :: Int) .&. 0xffc0) -1 
-    x_line = Line (fromIntegral grid_x,0) (0,1) 
-    y_line = Line (0,fromIntegral grid_y) (1,0)  
+                  
+    -- For some reason adding small amounts here (to the x_line and y_line direction)               
+    -- has same effect as the changes described in the "intersect" function
+    x_line = Line (fromIntegral grid_x,0) (0.001,1.001) 
+    y_line = Line (0,fromIntegral grid_y) (1.001,0.001)  
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
     
@@ -160,13 +168,15 @@ castRay2 world ray =
           in if d1 < d2 
              then (p,d1) 
              else (q,d2) 
-    value = world !! (floor (px / 64),floor (py / 64))
+    value = trace (show (floor (px / 64),floor (py / 64))) $ world !! (floor (px / 64),floor (py / 64))
      
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
 posRayDy  (Ray _ (_,dy)) = dy > 0 
 rayX      (Ray (x,_) _) = x
 rayY      (Ray (_,y) _) = y 
+rayDx     (Ray _ (dx,_)) = dx 
+rayDy     (Ray _ (_,dy)) = dy 
 rayStart  (Ray s _) = s 
 rayDeltas (Ray _ d) = d 
 
@@ -201,16 +211,17 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0
 convertLine (x1, y1) (x2, y2) = (a,b,c) 
   where 
     
-    --a = y2 
-    --b = x2
-    --c = a*x1+b*y1     
+    a = y2 
+    b = -x2
+    c = a*x1+b*y1     
     
     --Strange. I think above and below are "equal" 
     --but using the above leads to infinite loop "somewhere"
-    
-    a = (y1+y2) - y1  
-    b = x1 - (x1+x2)  
-    c = a*x1+b*y1     
+    --  + The loop is in CastRay2 
+     
+    --a = (y1+y2) - y1  
+    --b = x1 - (x1+x2)  
+    --c = a*x1+b*y1     
    
 
 
