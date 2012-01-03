@@ -10,7 +10,12 @@
    * Improve modularity  
    * Collision detection
    * There is some problem with the line intersection code. 
-     
+   * Right now the line intersection code is very sensitive      
+     and I fear it might break down.
+   * If a ray fails to hit any wall (which should be rare) 
+     it should be quite ok to just use the result of a neighbouring 
+     ray. 
+   * If a "level" is correct no ray should ever completely miss all walls. 
 
   This is also an exercise in using SDL. 
   
@@ -82,6 +87,7 @@ windowHeight   = 200
 
 ----------------------------------------------------------------------------
 -- CastRay is a quite direct translation from the C code in the Book
+-- TODO: horizontal_crossing_at_x  etc are really bad names (they are wrong) 
 {- 
 castRay :: Array2D Int Int -> Int -> Int -> Int -> Int -> Float -> (Float,Int)
 castRay world x y cx cy colAngle = if (xp < 0 || xp > 15 || yp < 0 || yp > 15) 
