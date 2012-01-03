@@ -168,7 +168,7 @@ castRay2 world ray =
           in if d1 < d2 
              then (p,d1) 
              else (q,d2) 
-    value = trace (show (floor (px / 64),floor (py / 64))) $ world !! (floor (px / 64),floor (py / 64))
+    value = world !! (floor (px / 64),floor (py / 64))
      
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
