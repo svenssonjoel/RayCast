@@ -204,9 +204,9 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0
    (a1,b1,c1) = convertLine p1 d1
    (a2,b2,c2) = convertLine p2 d2 
    det = a1*b2 - a2*b1
+   
    x = (b2*c1 - b1*c2) / det 
    y = (a1*c2 - a2*c1) / det
-   
    
 convertLine (x1, y1) (x2, y2) = (a,b,c) 
   where 
