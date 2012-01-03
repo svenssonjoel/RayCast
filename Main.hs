@@ -12,6 +12,8 @@
    * There is some problem with the line intersection code. 
    * Right now the line intersection code is very sensitive      
      and I fear it might break down.
+     + The line intersection code seems to have problems 
+       with vertical and horizontal lines... 
    * If a ray fails to hit any wall (which should be rare) 
      it should be quite ok to just use the result of a neighbouring 
      ray. 
@@ -156,10 +158,8 @@ castRay2 world (id,ray) =  -- the ID is for debuging
              then ((floor (rayY ray) :: Int) .&. 0xffc0) + 64
              else ((floor (rayY ray) :: Int) .&. 0xffc0) -1 
                   
-    -- For some reason adding small amounts here (to the x_line and y_line direction)               
-    -- has same effect as the changes described in the "intersect" function
-    x_line = Line (fromIntegral grid_x,0) (0.0,1.0) 
-    y_line = Line (0,fromIntegral grid_y) (1.0,0.0)  
+    x_line = Line (fromIntegral grid_x,-10000) (fromIntegral grid_x+0.001,10000) 
+    y_line = Line (-10000,fromIntegral grid_y) (10000,fromIntegral grid_y+0.001)  
     
     -- Does the intersection code give wrong results for 
     -- vertical and horizontal lines ? 
@@ -192,9 +192,10 @@ rayDeltas (Ray _ d) = d
 ---------------------------------------------------------------------------- 
 -- 
 type Vector2D = (Float,Float) 
+type Point2D  = (Float,Float)
 
-data Ray     = Ray  Vector2D Vector2D -- Point direction representation    
-data Line    = Line Vector2D Vector2D -- point direction representation 
+data Ray     = Ray  Point2D Vector2D -- Point direction representation    
+data Line    = Line Point2D Vector2D  
 
 
 distance :: Vector2D -> Vector2D -> Float 
@@ -210,29 +211,24 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0
                                      then Nothing 
                                      else (Just (x, y)) 
  where  
-   (a1,b1,c1) = convertLine p1 d1
+   (a1,b1,c1) = convertRay p1 d1
    (a2,b2,c2) = convertLine p2 d2 
    det = a1*b2 - a2*b1
    
    x = (b2*c1 - b1*c2) / det 
    y = (a1*c2 - a2*c1) / det
-   
-convertLine (x1, y1) (x2, y2) = (a,b,c) 
-  where 
-    
-    --a = y2 
-    --b = -x2
-    --c = a*x1+b*y1     
-    
-    --Strange. I think above and below are "equal" 
-    --but using the above leads to infinite loop "somewhere"
-    --  + The loop is in CastRay2 
-     
-    a = (y1+y2) - y1  
-    b = x1 - (x1+x2)  
-    c = a*x1+b*y1     
-   
 
+convertRay  (x, y) (dx, dy) = (a,b,c) 
+  where 
+    a = dy -- (y+dy) - y  
+    b = -dx -- x - (x+dx)
+    c = a*x+b*y
+   
+convertLine (x1,y1) (x2,y2) = (a,b,c) 
+  where 
+    a = y2 - y1 
+    b = x1 - x2
+    c = a*x1+b*y1
 
 ----------------------------------------------------------------------------
 -- rendering routines 
