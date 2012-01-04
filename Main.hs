@@ -18,7 +18,10 @@
      it should be quite ok to just use the result of a neighbouring 
      ray. 
    * If a "level" is correct no ray should ever completely miss all walls. 
+     (And if it does something is wrong in the line-line intersection calculation) 
 
+
+  **************************************
   This is also an exercise in using SDL. 
   
   Early problems in using SDL is. 
@@ -45,24 +48,23 @@ import Data.Word
 
 import SDLUtils 
 
-import Debug.Trace
- 
+import System.IO.Unsafe
 
 ----------------------------------------------------------------------------
 --
     
 testLevel = [[1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2], 
-             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-             [1,0,0,0,0,0,0,0,2,1,2,1,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
-             [1,0,0,0,0,0,0,0,1,2,1,2,0,0,0,1],
-             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+             [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+             [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
+             [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+             [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
+             [1,0,1,0,0,0,0,0,2,1,2,1,0,0,0,1],
+             [1,0,2,0,0,0,0,0,0,0,0,2,0,0,0,1],
+             [1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1],
+             [1,0,1,0,1,2,0,0,0,0,0,2,0,0,0,1],
+             [1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,1],
+             [1,0,2,0,0,2,0,0,1,2,1,2,0,0,0,1],
+             [1,0,2,2,1,1,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -73,6 +75,8 @@ type Array2D i e = Array i (Array i e)
 
 testLevelArr :: Array2D Int Int 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
+
+testTexture = unsafePerformIO$ loadBMP "texture1.bmp" 
 
 (!!) arr (x,y) = (arr ! y) ! x  
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
@@ -87,70 +91,22 @@ viewportCenter = 100
 windowWidth    = 320 
 windowHeight   = 200
 
-----------------------------------------------------------------------------
--- CastRay is a quite direct translation from the C code in the Book
--- TODO: horizontal_crossing_at_x  etc are really bad names (they are wrong) 
-{- 
-castRay :: Array2D Int Int -> Int -> Int -> Int -> Int -> Float -> (Float,Int)
-castRay world x y cx cy colAngle = if (xp < 0 || xp > 15 || yp < 0 || yp > 15) 
-                                      then error "You are outside the world!" -- (100.0,1)  -- just make something up if value > 0 
-                                      else 
-                                        if (value > 0) 
-                                        then (distance',value)  
-                                        else castRay world x y nx ny colAngle  
-                                   
-  where 
-    xdiff = floor (1024*(cos colAngle))
-    ydiff = floor (1024*(sin colAngle))
-    grid_x = if (xdiff > 0) 
-             then (cx .&. 0xffc0) + 64
-             else (cx .&. 0xffc0) - 1
-    grid_y = if (ydiff > 0) 
-             then (cy .&. 0xffc0) + 64
-             else (cy .&. 0xffc0) -1 
-    horizontal_crossing_at_x = (fromIntegral grid_x) 
-    horizontal_crossing_at_y = (fromIntegral cy) + (slope xdiff ydiff) * (fromIntegral (grid_x - cx))  
-    vertical_crossing_at_x   = (fromIntegral cx) + (fromIntegral (grid_y-cy)) / (slope xdiff ydiff)
-    vertical_crossing_at_y   = (fromIntegral grid_y)
-    horizontal_dist = dist (horizontal_crossing_at_x - (fromIntegral x), 
-                            horizontal_crossing_at_y - (fromIntegral y)) 
-    vertical_dist   = dist (vertical_crossing_at_x - (fromIntegral x),                  
-                            vertical_crossing_at_y - (fromIntegral y))
-    (xp,yp,nx,ny)  = if (horizontal_dist < vertical_dist) 
-                     then (floor (horizontal_crossing_at_x / 64), 
-                           floor (horizontal_crossing_at_y / 64),
-                           floor horizontal_crossing_at_x,
-                           floor horizontal_crossing_at_y) 
-                     else (floor (vertical_crossing_at_x / 64),      
-                           floor (vertical_crossing_at_y / 64),
-                           floor vertical_crossing_at_x,
-                           floor vertical_crossing_at_y) 
-    distance' = min horizontal_dist vertical_dist 
-    value = world !! (xp,yp) 
-    
-slope :: (Integral a, Fractional b, Ord b)  => a -> a -> b 
-slope dx dy = if sl == 0.0 then 0.0001 else sl   
-  where 
-    sl = ((fromIntegral dy) / (fromIntegral dx))
 
-dist (xd,yd) = max 1 (sqrt (xd*xd+yd*yd))
--}
 ---------------------------------------------------------------------------- 
 -- castRay2 
-castRay2 :: Array2D Int Int -> (Int,Ray) -> (Float,Int)
-castRay2 world (id,ray) =  -- the ID is for debuging 
-  if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
-  then (200,1)
-  else                                                                         
+castRay2 :: Array2D Int Int -> Float -> Ray  -> (Float,Int,Int)
+castRay2 world accDist ray=  -- the ID is for debuging 
+  --if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
+  --then (200,1) -- when outside of the world
+  --else                                                                         
     if (value > 0)  
-    then (dist,value) 
+    then (accDist+dist,value,offs) 
     else 
-      let (d,v) = castRay2 world (id,(Ray (px ,py) (rayDeltas ray)))
-      in  (dist+d,v)
+      -- Continue along the ray 
+      castRay2 world (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+     --  in  (dist+d,v)
         
   where 
-    -- TODO: grid_x and grid_y is problematic in this setting
-    -- because of how I use 
     grid_x = if (posRayDx ray) 
              then ((floor (rayX ray) :: Int) .&. 0xffc0) + 64
              else ((floor (rayX ray) :: Int) .&. 0xffc0) - 1
@@ -158,6 +114,8 @@ castRay2 world (id,ray) =  -- the ID is for debuging
              then ((floor (rayY ray) :: Int) .&. 0xffc0) + 64
              else ((floor (rayY ray) :: Int) .&. 0xffc0) -1 
                   
+    -- The gridlines are tweaked slightly to not be perfectly horizontal or vertical. 
+    -- those two cases seem to upset the ray/line intersection test. 
     x_line = Line (fromIntegral grid_x,-10000) (fromIntegral grid_x+0.001,10000) 
     y_line = Line (-10000,fromIntegral grid_y) (10000,fromIntegral grid_y+0.001)  
     
@@ -166,18 +124,19 @@ castRay2 world (id,ray) =  -- the ID is for debuging
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
     
-    ((px,py),dist)  = 
+    ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p)
-        (Nothing, Just p) -> (p, distance (rayStart ray) p) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(floor (snd p) `mod` 64) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(floor (fst p) `mod` 64) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1) 
-             else (q,d2) 
-    value = trace (show (id,(floor px `mod` 64), (floor py `mod` 64))) $ world !! (floor px `div` 64, floor py `div` 64)
+             then (p,d1,(floor (snd p) `mod` 64) ) 
+             else (q,d2,(floor (fst q) `mod` 64) ) 
+    value = world !! (floor px `div` 64, floor py `div` 64)
+
      
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
@@ -195,17 +154,20 @@ type Vector2D = (Float,Float)
 type Point2D  = (Float,Float)
 
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
-data Line    = Line Point2D Vector2D  
+mkRay p r    = Ray p (cos r, sin r)  
+
+data Line    = Line Point2D Point2D  -- Two points on line representation  
 
 
-distance :: Vector2D -> Vector2D -> Float 
+distance :: Vector2D -> Vector2D -> Float
 distance (x1, y1) (x2, y2) = 
   sqrt (xd*xd+yd*yd)
     where 
       xd = x2 - x1 
       yd = y2 - y1 
 
-
+-- Intersection between ray and line. 
+-- TODO: should there be a case for coincident ray/line
 intersect :: Ray -> Line -> Maybe Vector2D 
 intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0 
                                      then Nothing 
@@ -216,12 +178,12 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0
    det = a1*b2 - a2*b1
    
    x = (b2*c1 - b1*c2) / det 
-   y = (a1*c2 - a2*c1) / det
+   y = (a1*c2 - a2*c1)  / det
 
 convertRay  (x, y) (dx, dy) = (a,b,c) 
   where 
-    a = dy -- (y+dy) - y  
-    b = -dx -- x - (x+dx)
+    a = dy             -- (y+dy) - y  
+    b = -dx            -- x - (x+dx)
     c = a*x+b*y
    
 convertLine (x1,y1) (x2,y2) = (a,b,c) 
@@ -235,22 +197,24 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
 renderView world px py angle surf =  
     mapM_ (renderCol surf) distCol 
   where 
-    dists''  = results 
-    dists'   = map (\(x,y) -> (if x == 0 then 1 else x,y)) dists''
-    dists    = zipWith (\(x,y) angle -> (x*cos(angle),y)) dists' colAngles 
+    -- avoid div by zero (but does it ever really happen?) 
+    dists'   = map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
+    
+    -- fixes the "fish eye" phenomenom    (*cos(angle)) 
+    dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
     distCol = zip dists [0..] 
     colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..319]] 
-    -- colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..799]] 
-    rays = map (+angle) colAngles 
-    --results = map (castRay world px py px py) rays                        
     
-    rays' = map (\r -> (cos r,sin r)) rays
-    rays''  = map (\deltas -> Ray (px,py) deltas) rays'  
-    results = map (castRay2 world) (zip [0..] rays'')   
+    rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
+    
+    results = map (castRay2 world 0.0) rays 
+
+
 
 -- draw a single column into surf
-renderCol surf ((dist,i),c) = 
-  vertLine c starty endy color surf
+renderCol surf ((dist,i,x),c) = 
+  --vertLine c starty endy color surf
+  texturedVLine c starty endy surf  x 0 64 testTexture
     where 
       color = 
           -- TODO: Cheating here with the colors
@@ -272,26 +236,29 @@ main = do
   screen <- getVideoSurface
   putStrLn$ arr2dStr$ testLevelArr
   
-  eventLoop screen (0.0,fromIntegral (7*64+32) ,fromIntegral (7*64+32))
+  eventLoop screen 
+    (False,False,False,False) -- Keyboard state
+    (0.0,fromIntegral (7*64+32) ,fromIntegral (7*64+32))
   
   quit
   
 ----------------------------------------------------------------------------
 -- process events and draw graphics 
-eventLoop :: Surface -> (Float,Float, Float) -> IO ()
-eventLoop screen (r,x,y) = do 
-  
+eventLoop :: Surface 
+             -> (Bool,Bool,Bool,Bool) 
+             -> (Float,Float, Float) 
+             -> IO ()
+eventLoop screen (up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
   
-  floor <- mapRGB pf 32 64 32 
-  ceil  <- mapRGB pf 128 128 128  
+  floor <- mapRGB pf 32 64 32     -- color of floors
+  ceil  <- mapRGB pf 128 128 128  -- color of ceilings 
   
  
   -- draw single colored floor and ceilings (here use 320 for widht, inconsistent?)
   fillRect screen (Just (Rect 0 0 windowWidth (windowHeight `div` 2))) ceil    
   fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
-  
   
   -- draw all the visible walls
   --renderView testLevelArr (round x) (round y) r screen
@@ -302,28 +269,38 @@ eventLoop screen (r,x,y) = do
   -- process events 
   e <- pollEvent
   
-  let (r',x',y',b) = 
+  
+  let (up',down',left',right',b) = 
         case e of 
           (KeyDown k) -> 
             case (symKey k) of 
-              SDLK_LEFT  -> (r-0.1,x,y,False)
-              SDLK_RIGHT -> (r+0.1,x,y,False)
-              SDLK_UP    -> 
-                let 
-                    dx = 32 * cos r
-                    dy = 32 * sin r
-                in (r,x+dx,y+dy,False)
-              SDLK_DOWN  -> 
-                let 
-                    dx = 32 * cos r
-                    dy = 32 * sin r
-                in (r,x-dx,y-dy,False)
-                
-                
-              otherwise  -> (r,x,y,False)
-          Quit -> (r,x,y,True) -- quit 
-          otherwise -> (r,x,y,False)
+              SDLK_LEFT  -> (up,down,True,right,False)
+              SDLK_RIGHT -> (up,down,left,True,False)
+              SDLK_UP    -> (True,down,left,right,False)
+              SDLK_DOWN  -> (up,True,left,right,False)
+              otherwise  -> (up,down,left,right,False)
+          (KeyUp k) -> 
+            case (symKey k) of 
+              SDLK_LEFT  -> (up,down,False,right,False)
+              SDLK_RIGHT -> (up,down,left,False,False)
+              SDLK_UP    -> (False,down,left,right,False)
+              SDLK_DOWN  -> (up,False,left,right,False)
+              otherwise  -> (up,down,left,right,False)
+          Quit -> (up,down,left,right,True) -- quit 
+          otherwise -> (up,down,left,right,False)
   
-  unless b $ eventLoop screen (r',x',y')     
+  let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
+
+  unless b $ eventLoop screen (up',down',left',right') (r',x',y')     
   
-  
+  where 
+    moveLeft  b (r,x,y) = if b then (r-0.01,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = if b then (r+0.01,x,y) else (r,x,y) 
+    moveUp    b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
+      where 
+        x' = x + (2*cos r) 
+        y' = y + (2*sin r)
+    moveDown  b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
+      where 
+        x' = x - (2*cos r)
+        y' = y - (2*sin r)
