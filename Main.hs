@@ -18,7 +18,10 @@
      it should be quite ok to just use the result of a neighbouring 
      ray. 
    * If a "level" is correct no ray should ever completely miss all walls. 
+     (And if it does something is wrong in the line-line intersection calculation) 
 
+
+  **************************************
   This is also an exercise in using SDL. 
   
   Early problems in using SDL is. 
@@ -37,6 +40,7 @@ import Prelude hiding ((!!))
 import Graphics.UI.SDL as SDL
 
 import Data.Bits
+
 
 import Control.Monad
 import Data.Array
@@ -177,7 +181,7 @@ castRay2 world (id,ray) =  -- the ID is for debuging
           in if d1 < d2 
              then (p,d1) 
              else (q,d2) 
-    value = trace (show (id,(floor px `div` 64), (floor py `div` 64))) $ world !! (floor px `div` 64, floor py `div` 64)
+    value = world !! (floor px `div` 64, floor py `div` 64)
      
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
@@ -272,15 +276,19 @@ main = do
   screen <- getVideoSurface
   putStrLn$ arr2dStr$ testLevelArr
   
-  eventLoop screen (0.0,fromIntegral (7*64+32) ,fromIntegral (7*64+32))
+  eventLoop screen 
+    (False,False,False,False) -- Keyboard state
+    (0.0,fromIntegral (7*64+32) ,fromIntegral (7*64+32))
   
   quit
   
 ----------------------------------------------------------------------------
 -- process events and draw graphics 
-eventLoop :: Surface -> (Float,Float, Float) -> IO ()
-eventLoop screen (r,x,y) = do 
-  
+eventLoop :: Surface 
+             -> (Bool,Bool,Bool,Bool) 
+             -> (Float,Float, Float) 
+             -> IO ()
+eventLoop screen (up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
   
@@ -292,7 +300,6 @@ eventLoop screen (r,x,y) = do
   fillRect screen (Just (Rect 0 0 windowWidth (windowHeight `div` 2))) ceil    
   fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
-  
   -- draw all the visible walls
   --renderView testLevelArr (round x) (round y) r screen
   renderView testLevelArr x y r screen
@@ -302,6 +309,28 @@ eventLoop screen (r,x,y) = do
   -- process events 
   e <- pollEvent
   
+  
+  let (up',down',left',right',b) = 
+        case e of 
+          (KeyDown k) -> 
+            case (symKey k) of 
+              SDLK_LEFT  -> (up,down,True,right,False)
+              SDLK_RIGHT -> (up,down,left,True,False)
+              SDLK_UP    -> (True,down,left,right,False)
+              SDLK_DOWN  -> (up,True,left,right,False)
+              otherwise  -> (up,down,left,right,False)
+          (KeyUp k) -> 
+            case (symKey k) of 
+              SDLK_LEFT  -> (up,down,False,right,False)
+              SDLK_RIGHT -> (up,down,left,False,False)
+              SDLK_UP    -> (False,down,left,right,False)
+              SDLK_DOWN  -> (up,False,left,right,False)
+              otherwise  -> (up,down,left,right,False)
+          Quit -> (up,down,left,right,True) -- quit 
+          otherwise -> (up,down,left,right,False)
+  
+  
+  {-
   let (r',x',y',b) = 
         case e of 
           (KeyDown k) -> 
@@ -323,7 +352,21 @@ eventLoop screen (r,x,y) = do
               otherwise  -> (r,x,y,False)
           Quit -> (r,x,y,True) -- quit 
           otherwise -> (r,x,y,False)
+  -} 
+  let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
+
   
-  unless b $ eventLoop screen (r',x',y')     
   
   
+  unless b $ eventLoop screen (up',down',left',right') (r',x',y')     
+  where 
+    moveLeft  b (r,x,y) = if b then (r-0.01,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = if b then (r+0.01,x,y) else (r,x,y) 
+    moveUp    b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
+      where 
+        x' = x + (2*cos r) 
+        y' = y + (2*sin r)
+    moveDown  b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
+      where 
+        x' = x - (2*cos r)
+        y' = y - (2*sin r)
