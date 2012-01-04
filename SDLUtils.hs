@@ -45,24 +45,32 @@ vertLine x y1 y2 (r,g,b) surf =
               ] 
     
 -- line needs to be clipped against the target surface
+-- Texture and surf must be same format
 texturedVLine x y1 y2 surf xt yt1 yt2 tex = 
   do 
-    let pf = surfaceGetPixelFormat surf 
-    tex' <- convertSurface tex pf [] 
-    texPix  <- castPtr `fmap` surfaceGetPixels tex'
+    
+    texPix  <- castPtr `fmap` surfaceGetPixels tex
     surfPix <- castPtr `fmap` surfaceGetPixels surf 
     sequence_ [ do
                    p <- peekElemOff texPix (tstart + ((floor((fromIntegral i)*ratio))*64))
                    pokeElemOff surfPix (start + (i*w)) (p :: Word32) 
       
-              | i <- [0..lineHeight-1]
+              | i <- [0..clippedHeight-1]
               ]
     
   where 
-    start  = y1 * w + x 
-    tstart = yt1 * 64 + xt  
+    pf = surfaceGetPixelFormat surf 
+    sw = surfaceGetWidth surf
+    sh = surfaceGetHeight surf
+    clipped_y1  = max 0 y1
+    clipped_y2  = min y2 (sh-1)
+    clipped_yt1 = yt1 + ceiling (fromIntegral (clipped_y1 - y1) * ratio)   -- floor( ratio / fromIntegral (clipped_y1 - y1))
+    
+    start  = clipped_y1 * w + x 
+    tstart = clipped_yt1 * 64 + xt  
     w          = surfaceGetWidth surf 
     lineHeight = y2 - y1 
+    clippedHeight = clipped_y2 - clipped_y1 
     texHeight  = yt2 - yt1 
     ratio      = (fromIntegral texHeight) / (fromIntegral lineHeight)
     

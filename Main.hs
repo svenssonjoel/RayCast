@@ -76,7 +76,7 @@ type Array2D i e = Array i (Array i e)
 testLevelArr :: Array2D Int Int 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
-testTexture = unsafePerformIO$ loadBMP "texture1.bmp" 
+
 
 (!!) arr (x,y) = (arr ! y) ! x  
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
@@ -194,8 +194,8 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
 
 ----------------------------------------------------------------------------
 -- rendering routines 
-renderView world px py angle surf =  
-    mapM_ (renderCol surf) distCol 
+renderView world px py angle surf tex =  
+    mapM_ (renderCol surf tex) distCol 
   where 
     -- avoid div by zero (but does it ever really happen?) 
     dists'   = map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
@@ -212,9 +212,9 @@ renderView world px py angle surf =
 
 
 -- draw a single column into surf
-renderCol surf ((dist,i,x),c) = 
+renderCol surf tex ((dist,i,x),c) = 
   --vertLine c starty endy color surf
-  texturedVLine c starty endy surf  x 0 64 testTexture
+  texturedVLine c starty endy surf  x 0 64 tex
     where 
       color = 
           -- TODO: Cheating here with the colors
@@ -222,8 +222,8 @@ renderCol surf ((dist,i,x),c) =
             1 -> (128,0,0) 
             2 -> (255,0,128)
       height = floor (viewDistance * wallHeight / dist)
-      starty = max 0 (endy - height)
-      endy   = min 199 (floor (viewDistance * viewerHeight / dist + viewportCenter))
+      starty = endy - height -- max 0 (endy - height)
+      endy   = floor (viewDistance * viewerHeight / dist + viewportCenter) -- min 199 (..  )
       -- endy   = min 599 (floor (viewDistance * viewerHeight / dist + viewportCenter))
 ----------------------------------------------------------------------------
 -- Main !
@@ -236,7 +236,11 @@ main = do
   screen <- getVideoSurface
   putStrLn$ arr2dStr$ testLevelArr
   
-  eventLoop screen 
+  let pf = surfaceGetPixelFormat screen
+  testTexture' <- loadBMP "texture1.bmp" 
+  testTexture <- convertSurface testTexture' pf [] 
+                 
+  eventLoop screen testTexture
     (False,False,False,False) -- Keyboard state
     (0.0,fromIntegral (7*64+32) ,fromIntegral (7*64+32))
   
@@ -245,13 +249,14 @@ main = do
 ----------------------------------------------------------------------------
 -- process events and draw graphics 
 eventLoop :: Surface 
+             -> Surface 
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Float, Float) 
              -> IO ()
-eventLoop screen (up,down,left,right) (r,x,y) = do 
+eventLoop screen texture (up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
-  
+      
   floor <- mapRGB pf 32 64 32     -- color of floors
   ceil  <- mapRGB pf 128 128 128  -- color of ceilings 
   
@@ -262,7 +267,7 @@ eventLoop screen (up,down,left,right) (r,x,y) = do
   
   -- draw all the visible walls
   --renderView testLevelArr (round x) (round y) r screen
-  renderView testLevelArr x y r screen
+  renderView testLevelArr x y r screen texture
 
   SDL.flip screen
   
@@ -291,7 +296,7 @@ eventLoop screen (up,down,left,right) (r,x,y) = do
   
   let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
 
-  unless b $ eventLoop screen (up',down',left',right') (r',x',y')     
+  unless b $ eventLoop screen texture (up',down',left',right') (r',x',y')     
   
   where 
     moveLeft  b (r,x,y) = if b then (r-0.01,x,y) else (r,x,y) 
