@@ -44,7 +44,7 @@ vertLine x y1 y2 (r,g,b) surf =
               | i <- [0..(y2-y1)]
               ] 
     
-
+-- line needs to be clipped against the target surface
 texturedVLine x y1 y2 surf xt yt1 yt2 tex = 
   do 
     let pf = surfaceGetPixelFormat surf 
