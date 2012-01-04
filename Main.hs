@@ -94,17 +94,17 @@ windowHeight   = 200
 
 ---------------------------------------------------------------------------- 
 -- castRay2 
-castRay2 :: Array2D Int Int -> (Int,Ray) -> (Float,Int)
-castRay2 world (id,ray) =  -- the ID is for debuging 
-  if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
-  then (200,1) -- when outside of the world
-  else                                                                         
+castRay2 :: Array2D Int Int -> Float -> Ray  -> (Float,Int)
+castRay2 world accDist ray=  -- the ID is for debuging 
+  --if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
+  --then (200,1) -- when outside of the world
+  --else                                                                         
     if (value > 0)  
-    then (dist,value) 
+    then (accDist+dist,value) 
     else 
       -- Continue along the ray 
-      let (d,v) = castRay2 world (id,(Ray (px ,py) (rayDeltas ray)))
-      in  (dist+d,v)
+      castRay2 world (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+     --  in  (dist+d,v)
         
   where 
     grid_x = if (posRayDx ray) 
@@ -153,6 +153,8 @@ type Vector2D = (Float,Float)
 type Point2D  = (Float,Float)
 
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
+mkRay p r    = Ray p (cos r, sin r)  
+
 data Line    = Line Point2D Point2D  -- Two points on line representation  
 
 
@@ -194,18 +196,19 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
 renderView world px py angle surf =  
     mapM_ (renderCol surf) distCol 
   where 
-    dists''  = results 
-    dists'   = map (\(x,y) -> (if x == 0 then 1 else x,y)) dists''
+    -- avoid div by zero (but does it ever really happen?) 
+    dists'   = map (\(x,y) -> (if x == 0.0 then 0.1 else x,y)) results 
+    
+    -- fixes the "fish eye" phenomenom    (*cos(angle)) 
     dists    = zipWith (\(x,y) angle -> (x*cos(angle),y)) dists' colAngles 
     distCol = zip dists [0..] 
     colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..319]] 
-    -- colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..799]] 
-    rays = map (+angle) colAngles 
-    --results = map (castRay world px py px py) rays                        
     
-    rays' = map (\r -> (cos r,sin r)) rays
-    rays''  = map (\deltas -> Ray (px,py) deltas) rays'  
-    results = map (castRay2 world) (zip [0..] rays'')   
+    rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
+    
+    results = map (castRay2 world 0.0) rays 
+
+
 
 -- draw a single column into surf
 renderCol surf ((dist,i),c) = 
