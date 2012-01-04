@@ -156,7 +156,7 @@ data Ray     = Ray  Point2D Vector2D -- Point direction representation
 data Line    = Line Point2D Point2D  -- Two points on line representation  
 
 
-distance :: Vector2D -> Vector2D -> Float 
+distance :: Vector2D -> Vector2D -> Float
 distance (x1, y1) (x2, y2) = 
   sqrt (xd*xd+yd*yd)
     where 
