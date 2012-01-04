@@ -4,7 +4,7 @@
 all: main
 
 
-main: Main.hs
+main: Main.hs SDLUtils.hs
 	ghc Main.hs -o main -O3 
 
 clean: 

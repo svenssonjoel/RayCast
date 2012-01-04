@@ -41,7 +41,6 @@ import Graphics.UI.SDL as SDL
 
 import Data.Bits
 
-
 import Control.Monad
 import Data.Array
 
@@ -49,8 +48,7 @@ import Data.Word
 
 import SDLUtils 
 
-import Debug.Trace
- 
+import System.IO.Unsafe
 
 ----------------------------------------------------------------------------
 --
@@ -78,6 +76,8 @@ type Array2D i e = Array i (Array i e)
 testLevelArr :: Array2D Int Int 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
+testTexture = unsafePerformIO$ loadBMP "texture1.bmp" 
+
 (!!) arr (x,y) = (arr ! y) ! x  
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
@@ -94,13 +94,13 @@ windowHeight   = 200
 
 ---------------------------------------------------------------------------- 
 -- castRay2 
-castRay2 :: Array2D Int Int -> Float -> Ray  -> (Float,Int)
+castRay2 :: Array2D Int Int -> Float -> Ray  -> (Float,Int,Int)
 castRay2 world accDist ray=  -- the ID is for debuging 
   --if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
   --then (200,1) -- when outside of the world
   --else                                                                         
     if (value > 0)  
-    then (accDist+dist,value) 
+    then (accDist+dist,value,offs) 
     else 
       -- Continue along the ray 
       castRay2 world (accDist+dist) (Ray (px ,py) (rayDeltas ray))
@@ -124,17 +124,17 @@ castRay2 world accDist ray=  -- the ID is for debuging
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
     
-    ((px,py),dist)  = 
+    ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p)
-        (Nothing, Just p) -> (p, distance (rayStart ray) p) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(floor (snd p) `mod` 64) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(floor (fst p) `mod` 64) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1) 
-             else (q,d2) 
+             then (p,d1,(floor (snd p) `mod` 64) ) 
+             else (q,d2,(floor (fst q) `mod` 64) ) 
     value = world !! (floor px `div` 64, floor py `div` 64)
      
     
@@ -197,10 +197,10 @@ renderView world px py angle surf =
     mapM_ (renderCol surf) distCol 
   where 
     -- avoid div by zero (but does it ever really happen?) 
-    dists'   = map (\(x,y) -> (if x == 0.0 then 0.1 else x,y)) results 
+    dists'   = map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
     
     -- fixes the "fish eye" phenomenom    (*cos(angle)) 
-    dists    = zipWith (\(x,y) angle -> (x*cos(angle),y)) dists' colAngles 
+    dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
     distCol = zip dists [0..] 
     colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..319]] 
     
@@ -211,8 +211,9 @@ renderView world px py angle surf =
 
 
 -- draw a single column into surf
-renderCol surf ((dist,i),c) = 
-  vertLine c starty endy color surf
+renderCol surf ((dist,i,x),c) = 
+  --vertLine c starty endy color surf
+  texturedVLine c starty endy surf  x 0 64 testTexture
     where 
       color = 
           -- TODO: Cheating here with the colors

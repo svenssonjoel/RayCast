@@ -7,6 +7,8 @@ import Foreign.Ptr
 import Foreign.Storable
 import Foreign.Marshal.Array
 
+import Data.Word
+
 ----------------------------------------------------------------------------
 -- 
 putPixel x y (Pixel pixel) surf =  
@@ -43,3 +45,25 @@ vertLine x y1 y2 (r,g,b) surf =
               ] 
     
 
+texturedVLine x y1 y2 surf xt yt1 yt2 tex = 
+  do 
+    let pf = surfaceGetPixelFormat surf 
+    tex' <- convertSurface tex pf [] 
+    texPix  <- castPtr `fmap` surfaceGetPixels tex'
+    surfPix <- castPtr `fmap` surfaceGetPixels surf 
+    sequence_ [ do
+                   p <- peekElemOff texPix (tstart + ((floor((fromIntegral i)*ratio))*64))
+                   pokeElemOff surfPix (start + (i*w)) (p :: Word32) 
+      
+              | i <- [0..lineHeight-1]
+              ]
+    
+  where 
+    start  = y1 * w + x 
+    tstart = yt1 * 64 + xt  
+    w          = surfaceGetWidth surf 
+    lineHeight = y2 - y1 
+    texHeight  = yt2 - yt1 
+    ratio      = (fromIntegral texHeight) / (fromIntegral lineHeight)
+    
+    
