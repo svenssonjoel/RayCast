@@ -6,7 +6,6 @@
   
   TODO 
    * Clean up code (make use of Haskell!) 
-   * Texturing 
    * Improve modularity  
    * Collision detection
    * There is some problem with the line intersection code. 
@@ -49,6 +48,8 @@ import Data.Word
 import SDLUtils 
 
 import System.IO.Unsafe
+
+import Foreign.Ptr
 
 ----------------------------------------------------------------------------
 --
@@ -198,7 +199,7 @@ renderView world px py angle surf tex =
     mapM_ (renderCol surf tex) distCol 
   where 
     -- avoid div by zero (but does it ever really happen?) 
-    dists'   = map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
+    dists'   = results -- map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
     
     -- fixes the "fish eye" phenomenom    (*cos(angle)) 
     dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
@@ -216,15 +217,45 @@ renderCol surf tex ((dist,i,x),c) =
   --vertLine c starty endy color surf
   texturedVLine c starty endy surf  x 0 64 tex
     where 
-      color = 
-          -- TODO: Cheating here with the colors
-          case i of 
-            1 -> (128,0,0) 
-            2 -> (255,0,128)
       height = floor (viewDistance * wallHeight / dist)
       starty = endy - height -- max 0 (endy - height)
       endy   = floor (viewDistance * viewerHeight / dist + viewportCenter) -- min 199 (..  )
-      -- endy   = min 599 (floor (viewDistance * viewerHeight / dist + viewportCenter))
+     
+----------------------------------------------------------------------------      
+-- Test! 
+--  - get surface pixels only one per renderView. 
+--  - No visible improvement.. 
+      
+renderViewPix world px py angle surf tex =  
+  do
+    surf' <- castPtr `fmap` surfaceGetPixels surf
+    tex'  <- castPtr `fmap` surfaceGetPixels tex
+  
+    mapM_ (renderColPix surf' tex') distCol 
+  where 
+    -- avoid div by zero (but does it ever really happen?) 
+    dists'   = results -- map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
+    
+    -- fixes the "fish eye" phenomenom    (*cos(angle)) 
+    dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
+    distCol = zip dists [0..] 
+    colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..319]] 
+    
+    rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
+    
+    results = map (castRay2 world 0.0) rays 
+
+
+
+-- draw a single column into surf
+renderColPix surf tex ((dist,i,x),c) = 
+    texturedVLinePix c starty endy surf  x 0 64 tex
+    where 
+      height = floor (viewDistance * wallHeight / dist)
+      starty = endy - height 
+      endy   = floor (viewDistance * viewerHeight / dist + viewportCenter)    
+      
+      
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
@@ -232,8 +263,11 @@ main = do
   
   --setVideoMode 320 200 32 [] 
   setVideoMode windowWidth windowHeight 32 []
+
   
   screen <- getVideoSurface
+--   toggleFullscreen screen
+  
   putStrLn$ arr2dStr$ testLevelArr
   
   let pf = surfaceGetPixelFormat screen
@@ -266,7 +300,6 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
   fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
   -- draw all the visible walls
-  --renderView testLevelArr (round x) (round y) r screen
   renderView testLevelArr x y r screen texture
 
   SDL.flip screen
@@ -279,11 +312,12 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
         case e of 
           (KeyDown k) -> 
             case (symKey k) of 
-              SDLK_LEFT  -> (up,down,True,right,False)
-              SDLK_RIGHT -> (up,down,left,True,False)
-              SDLK_UP    -> (True,down,left,right,False)
-              SDLK_DOWN  -> (up,True,left,right,False)
-              otherwise  -> (up,down,left,right,False)
+              SDLK_LEFT    -> (up,down,True,right,False)
+              SDLK_RIGHT   -> (up,down,left,True,False)
+              SDLK_UP      -> (True,down,left,right,False)
+              SDLK_DOWN    -> (up,True,left,right,False)
+              SDLK_ESCAPE  -> (up,down,left,right,True)
+              otherwise    -> (up,down,left,right,False)
           (KeyUp k) -> 
             case (symKey k) of 
               SDLK_LEFT  -> (up,down,False,right,False)
@@ -291,7 +325,7 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
               SDLK_UP    -> (False,down,left,right,False)
               SDLK_DOWN  -> (up,False,left,right,False)
               otherwise  -> (up,down,left,right,False)
-          Quit -> (up,down,left,right,True) -- quit 
+          Quit -> (up,down,left,right,True) 
           otherwise -> (up,down,left,right,False)
   
   let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 

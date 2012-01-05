@@ -46,6 +46,7 @@ vertLine x y1 y2 (r,g,b) surf =
     
 -- line needs to be clipped against the target surface
 -- Texture and surf must be same format
+-- Currently assumes 64*64 pixel texturemap
 texturedVLine x y1 y2 surf xt yt1 yt2 tex = 
   do 
     
@@ -53,25 +54,50 @@ texturedVLine x y1 y2 surf xt yt1 yt2 tex =
     surfPix <- castPtr `fmap` surfaceGetPixels surf 
     sequence_ [ do
                    p <- peekElemOff texPix (tstart + ((floor((fromIntegral i)*ratio))*64))
-                   pokeElemOff surfPix (start + (i*w)) (p :: Word32) 
+                   pokeElemOff surfPix (start + (i*sw)) (p :: Word32) 
       
-              | i <- [0..clippedHeight-1]
+              | i <- [0..clippedHeight]
               ]
     
   where 
-    pf = surfaceGetPixelFormat surf 
+    --pf = surfaceGetPixelFormat surf 
     sw = surfaceGetWidth surf
     sh = surfaceGetHeight surf
     clipped_y1  = max 0 y1
     clipped_y2  = min y2 (sh-1)
-    clipped_yt1 = yt1 + ceiling (fromIntegral (clipped_y1 - y1) * ratio)   -- floor( ratio / fromIntegral (clipped_y1 - y1))
+    clipped_yt1 = yt1 + round (fromIntegral (clipped_y1 - y1) * ratio)   
     
-    start  = clipped_y1 * w + x 
+    start  = clipped_y1 * sw + x 
     tstart = clipped_yt1 * 64 + xt  
-    w          = surfaceGetWidth surf 
+  
     lineHeight = y2 - y1 
     clippedHeight = clipped_y2 - clipped_y1 
     texHeight  = yt2 - yt1 
-    ratio      = (fromIntegral texHeight) / (fromIntegral lineHeight)
+    ratio      = (fromIntegral texHeight) /  (fromIntegral lineHeight) 
     
+
+texturedVLinePix x y1 y2 surfPix xt yt1 yt2 texPix = 
+  do 
+    sequence_ [ do
+                   p <- peekElemOff texPix (tstart + ((floor((fromIntegral i)*ratio))*64))
+                   pokeElemOff surfPix (start + (i*sw)) (p :: Word32) 
+      
+              | i <- [0..clippedHeight]
+              ]
+    
+  where 
+    sw = 320 
+    sh = 200 
+    clipped_y1  = max 0 y1
+    clipped_y2  = min y2 (sh-1)
+    clipped_yt1 = yt1 + round (fromIntegral (clipped_y1 - y1) * ratio)   
+    
+    start  = clipped_y1 * sw + x 
+    tstart = clipped_yt1 * 64 + xt  
+  
+    lineHeight = y2 - y1 
+    clippedHeight = clipped_y2 - clipped_y1 
+    texHeight  = yt2 - yt1 
+    ratio      = (fromIntegral texHeight) /  (fromIntegral lineHeight) 
+
     
