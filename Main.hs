@@ -230,7 +230,7 @@ main = do
 
   
   screen <- getVideoSurface
-  --toggleFullscreen screen
+  toggleFullscreen screen
   
   putStrLn$ arr2dStr$ testLevelArr
   
