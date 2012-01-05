@@ -4,7 +4,7 @@
 all: main
 
 
-main: Main.hs SDLUtils.hs CExtras.hs cExtras.c
+main: Main.hs SDLUtils.hs CExtras.hs cExtras.c		
 	ghc Main.hs cExtras.c -o main -O3 
 
 CExtras.hs: CExtras.chs 
