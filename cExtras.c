@@ -1,16 +1,20 @@
 
-
 #include <SDL/SDL.h> 
 
 #include <stdio.h>
 
+
+/* 
+  as direct a Haskell -> C translation as I could come up 
+  with. 
+   + Directly lead to huge performance gain.
+   - Why is the Haskell version SO extremely slow ? 
+*/ 
 void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 		   int xt, int yt1, int yt2, SDL_Surface *text) {
 
-
-
   int i; 
-  int sh = surf->h; // SDL_surfaceGetWidth(surf);
+  int sh = surf->h; 
   int sw = surf->w;
   int clipped_y1 = y1 > 0 ? y1 : 0;
   int clipped_y2 = y2 < (sh-1) ? y2 : sh - 1;
@@ -40,31 +44,3 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 
 } 
 
-/*
-texturedVLine x y1 y2 surf xt yt1 yt2 tex = 
-  do 
-    
-    texPix  <- castPtr `fmap` surfaceGetPixels tex
-    surfPix <- castPtr `fmap` surfaceGetPixels surf 
-    sequence_ [ do
-                   
-      
-              | i <- [0..clippedHeight]
-              ]    
-	      
-  where 
-    sw = surfaceGetWidth surf
-    sh = surfaceGetHeight surf
-    clipped_y1  = max 0 y1
-    clipped_y2  = min y2 (sh-1)
-    clipped_yt1 = yt1 + floor (fromIntegral (clipped_y1 - y1) * ratio)   
-    
-    start  = clipped_y1 * sw + x 
-    tstart = clipped_yt1 * 64 + xt  
-  
-    lineHeight = y2 - y1 
-    clippedHeight = clipped_y2 - clipped_y1 
-    texHeight  = yt2 - yt1 
-    ratio      = (fromIntegral texHeight) /  (fromIntegral lineHeight) 
-    
-*/    
