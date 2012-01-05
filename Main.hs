@@ -92,20 +92,16 @@ viewportCenter = 100
 windowWidth    = 320 
 windowHeight   = 200
 
-
 ---------------------------------------------------------------------------- 
 -- castRay2 
 castRay2 :: Array2D Int Int -> Float -> Ray  -> (Float,Int,Int)
-castRay2 world accDist ray=  -- the ID is for debuging 
-  --if (floor (px/64) > 15 || floor (px/64) < 0 || floor (py/64) > 15 || floor (py/64) < 0) 
-  --then (200,1) -- when outside of the world
-  --else                                                                         
-    if (value > 0)  
+castRay2 world accDist ray = 
+    if (value > 0) -- ray has struck solid wall
     then (accDist+dist,value,offs) 
     else 
       -- Continue along the ray 
       castRay2 world (accDist+dist) (Ray (px ,py) (rayDeltas ray))
-     --  in  (dist+d,v)
+
         
   where 
     grid_x = if (posRayDx ray) 
@@ -221,52 +217,17 @@ renderCol surf tex ((dist,i,x),c) =
       starty = endy - height -- max 0 (endy - height)
       endy   = floor (viewDistance * viewerHeight / dist + viewportCenter) -- min 199 (..  )
      
-----------------------------------------------------------------------------      
--- Test! 
---  - get surface pixels only one per renderView. 
---  - No visible improvement.. 
-      
-renderViewPix world px py angle surf tex =  
-  do
-    surf' <- castPtr `fmap` surfaceGetPixels surf
-    tex'  <- castPtr `fmap` surfaceGetPixels tex
-  
-    mapM_ (renderColPix surf' tex') distCol 
-  where 
-    -- avoid div by zero (but does it ever really happen?) 
-    dists'   = results -- map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
-    
-    -- fixes the "fish eye" phenomenom    (*cos(angle)) 
-    dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
-    distCol = zip dists [0..] 
-    colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..319]] 
-    
-    rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
-    
-    results = map (castRay2 world 0.0) rays 
-
-
-
--- draw a single column into surf
-renderColPix surf tex ((dist,i,x),c) = 
-    texturedVLinePix c starty endy surf  x 0 64 tex
-    where 
-      height = floor (viewDistance * wallHeight / dist)
-      starty = endy - height 
-      endy   = floor (viewDistance * viewerHeight / dist + viewportCenter)    
-      
       
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
   SDL.init [InitEverything] 
   
-  --setVideoMode 320 200 32 [] 
   setVideoMode windowWidth windowHeight 32 []
 
   
   screen <- getVideoSurface
---   toggleFullscreen screen
+  toggleFullscreen screen
   
   putStrLn$ arr2dStr$ testLevelArr
   
@@ -332,14 +293,17 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
 
   unless b $ eventLoop screen texture (up',down',left',right') (r',x',y')     
   
+  
+  -- very crude colision against walls added
   where 
     moveLeft  b (r,x,y) = if b then (r-0.02,x,y) else (r,x,y) 
     moveRight b (r,x,y) = if b then (r+0.02,x,y) else (r,x,y) 
-    moveUp    b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
+    moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
         x' = x + (4*cos r) 
         y' = y + (4*sin r)
-    moveDown  b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
+    moveDown  b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
         x' = x - (2*cos r)
         y' = y - (2*sin r)
+    movementAllowed (px,py) = testLevelArr !! (floor (px / 64),floor (py / 64)) == 0

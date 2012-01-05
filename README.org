@@ -9,5 +9,5 @@
     lines. Right now there is a (+0.001) in the code to make the horizontal and 
     vertical gridlines a little less horizontal/vertical 
   + Figure out how to Profile (SDL library made for profiling needed) 
-
+  + Colision agains walls needs improvement  
 

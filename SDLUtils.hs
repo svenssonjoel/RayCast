@@ -64,7 +64,7 @@ texturedVLine x y1 y2 surf xt yt1 yt2 tex =
     sh = surfaceGetHeight surf
     clipped_y1  = max 0 y1
     clipped_y2  = min y2 (sh-1)
-    clipped_yt1 = yt1 + round (fromIntegral (clipped_y1 - y1) * ratio)   
+    clipped_yt1 = yt1 + floor (fromIntegral (clipped_y1 - y1) * ratio)   
     
     start  = clipped_y1 * sw + x 
     tstart = clipped_yt1 * 64 + xt  
@@ -74,29 +74,4 @@ texturedVLine x y1 y2 surf xt yt1 yt2 tex =
     texHeight  = yt2 - yt1 
     ratio      = (fromIntegral texHeight) /  (fromIntegral lineHeight) 
     
-
-texturedVLinePix x y1 y2 surfPix xt yt1 yt2 texPix = 
-  do 
-    sequence_ [ do
-                   p <- peekElemOff texPix (tstart + ((floor((fromIntegral i)*ratio))*64))
-                   pokeElemOff surfPix (start + (i*sw)) (p :: Word32) 
-      
-              | i <- [0..clippedHeight]
-              ]
-    
-  where 
-    sw = 320 
-    sh = 200 
-    clipped_y1  = max 0 y1
-    clipped_y2  = min y2 (sh-1)
-    clipped_yt1 = yt1 + round (fromIntegral (clipped_y1 - y1) * ratio)   
-    
-    start  = clipped_y1 * sw + x 
-    tstart = clipped_yt1 * 64 + xt  
-  
-    lineHeight = y2 - y1 
-    clippedHeight = clipped_y2 - clipped_y1 
-    texHeight  = yt2 - yt1 
-    ratio      = (fromIntegral texHeight) /  (fromIntegral lineHeight) 
-
     
