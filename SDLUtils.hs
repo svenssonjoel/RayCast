@@ -57,8 +57,8 @@ texturedVLine x y1 y2 surf xt yt1 yt2 tex =
                    pokeElemOff surfPix (start + (i*sw)) (p :: Word32) 
       
               | i <- [0..clippedHeight]
-              ]
-    
+              ]    
+      
   where 
     sw = surfaceGetWidth surf
     sh = surfaceGetHeight surf

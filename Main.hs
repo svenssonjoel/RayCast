@@ -51,6 +51,8 @@ import System.IO.Unsafe
 
 import Foreign.Ptr
 
+import CExtras
+
 ----------------------------------------------------------------------------
 --
     
@@ -211,7 +213,8 @@ renderView world px py angle surf tex =
 -- draw a single column into surf
 renderCol surf tex ((dist,i,x),c) = 
   --vertLine c starty endy color surf
-  texturedVLine c starty endy surf  x 0 64 tex
+  -- texturedVLine c starty endy surf  x 0 64 tex
+  texVLine c starty endy surf x 0 64 tex
     where 
       height = floor (viewDistance * wallHeight / dist)
       starty = endy - height -- max 0 (endy - height)
@@ -227,7 +230,7 @@ main = do
 
   
   screen <- getVideoSurface
-  toggleFullscreen screen
+  --toggleFullscreen screen
   
   putStrLn$ arr2dStr$ testLevelArr
   
