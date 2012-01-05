@@ -333,12 +333,12 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
   unless b $ eventLoop screen texture (up',down',left',right') (r',x',y')     
   
   where 
-    moveLeft  b (r,x,y) = if b then (r-0.01,x,y) else (r,x,y) 
-    moveRight b (r,x,y) = if b then (r+0.01,x,y) else (r,x,y) 
+    moveLeft  b (r,x,y) = if b then (r-0.02,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = if b then (r+0.02,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
       where 
-        x' = x + (2*cos r) 
-        y' = y + (2*sin r)
+        x' = x + (4*cos r) 
+        y' = y + (4*sin r)
     moveDown  b (r,x,y) = if b then (r,x',y')   else (r,x,y) 
       where 
         x' = x - (2*cos r)

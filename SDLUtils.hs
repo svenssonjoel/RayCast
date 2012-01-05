@@ -44,7 +44,7 @@ vertLine x y1 y2 (r,g,b) surf =
               | i <- [0..(y2-y1)]
               ] 
     
--- line needs to be clipped against the target surface
+-- DONE: line needs to be clipped against the target surface
 -- Texture and surf must be same format
 -- Currently assumes 64*64 pixel texturemap
 texturedVLine x y1 y2 surf xt yt1 yt2 tex = 
@@ -60,7 +60,6 @@ texturedVLine x y1 y2 surf xt yt1 yt2 tex =
               ]
     
   where 
-    --pf = surfaceGetPixelFormat surf 
     sw = surfaceGetWidth surf
     sh = surfaceGetHeight surf
     clipped_y1  = max 0 y1
