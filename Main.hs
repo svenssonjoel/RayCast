@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fspec-constr-count=16  #-}
+
 {- 
   RayCasting (Like in the old Wolfenstein 3d game)  
 
@@ -107,16 +109,16 @@ castRay2 world accDist ray =
         
   where 
     grid_x = if (posRayDx ray) 
-             then ((floor (rayX ray) :: Int) .&. 0xffc0) + 64
-             else ((floor (rayX ray) :: Int) .&. 0xffc0) - 1
+             then (rayX ray .&. 0xffc0) + 64
+             else (rayX ray .&. 0xffc0) - 1
     grid_y = if (posRayDy ray) 
-             then ((floor (rayY ray) :: Int) .&. 0xffc0) + 64
-             else ((floor (rayY ray) :: Int) .&. 0xffc0) -1 
+             then (rayY ray .&. 0xffc0) + 64
+             else (rayY ray .&. 0xffc0) -1 
                   
     -- The gridlines are tweaked slightly to not be perfectly horizontal or vertical. 
     -- those two cases seem to upset the ray/line intersection test. 
-    x_line = Line (fromIntegral grid_x,-10000) (fromIntegral grid_x+0.001,10000) 
-    y_line = Line (-10000,fromIntegral grid_y) (10000,fromIntegral grid_y+0.001)  
+    x_line = Line (fromIntegral grid_x,-10000) (fromIntegral grid_x,10000) 
+    y_line = Line (-10000,fromIntegral grid_y) (10000,fromIntegral grid_y)  
     
     -- Does the intersection code give wrong results for 
     -- vertical and horizontal lines ? 
@@ -126,15 +128,15 @@ castRay2 world accDist ray =
     ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(floor (snd p) `mod` 64) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(floor (fst p) `mod` 64) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p `mod` 64) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p `mod` 64) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1,(floor (snd p) `mod` 64) ) 
-             else (q,d2,(floor (fst q) `mod` 64) ) 
-    value = world !! (floor px `div` 64, floor py `div` 64)
+             then (p,d1,(snd p `mod` 64) ) 
+             else (q,d2,(fst q `mod` 64) ) 
+    value = world !! (px `div` 64, py `div` 64)
 
      
     
@@ -149,18 +151,18 @@ rayDeltas (Ray _ d) = d
 
 ---------------------------------------------------------------------------- 
 -- 
-type Vector2D = (Float,Float) 
-type Point2D  = (Float,Float)
+type Vector2D = (Int,Int) 
+type Point2D  = (Int,Int)
 
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
-mkRay p r    = Ray p (cos r, sin r)  
+mkRay p r    = Ray p (floor(1024.0*cos r), floor (1024.0*sin r))  
 
 data Line    = Line Point2D Point2D  -- Two points on line representation  
 
 
 distance :: Vector2D -> Vector2D -> Float
 distance (x1, y1) (x2, y2) = 
-  sqrt (xd*xd+yd*yd)
+  sqrt $ fromIntegral (xd*xd+yd*yd)
     where 
       xd = x2 - x1 
       yd = y2 - y1 
@@ -168,7 +170,7 @@ distance (x1, y1) (x2, y2) =
 -- Intersection between ray and line. 
 -- TODO: should there be a case for coincident ray/line
 intersect :: Ray -> Line -> Maybe Vector2D 
-intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0 
+intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
                                      then Nothing 
                                      else (Just (x, y)) 
  where  
@@ -176,8 +178,8 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0.0
    (a2,b2,c2) = convertLine p2 d2 
    det = a1*b2 - a2*b1
    
-   x = (b2*c1 - b1*c2) / det 
-   y = (a1*c2 - a2*c1)  / det
+   x = (b2*c1 - b1*c2)  `div` det 
+   y = (a1*c2 - a2*c1)  `div` det
 
 convertRay  (x, y) (dx, dy) = (a,b,c) 
   where 
@@ -217,8 +219,8 @@ renderCol surf tex ((dist,i,x),c) =
   texVLine c starty endy surf x 0 64 tex
     where 
       height = floor (viewDistance * wallHeight / dist)
-      starty = endy - height -- max 0 (endy - height)
-      endy   = floor (viewDistance * viewerHeight / dist + viewportCenter) -- min 199 (..  )
+      starty = endy - height 
+      endy   = floor (viewDistance * viewerHeight / dist + viewportCenter) 
      
       
 ----------------------------------------------------------------------------
@@ -235,12 +237,12 @@ main = do
   putStrLn$ arr2dStr$ testLevelArr
   
   let pf = surfaceGetPixelFormat screen
-  testTexture' <- loadBMP "texture1.bmp" 
+  testTexture' <- loadBMP "texture2.bmp" 
   testTexture <- convertSurface testTexture' pf [] 
                  
   eventLoop screen testTexture
     (False,False,False,False) -- Keyboard state
-    (0.0,fromIntegral (7*64+32) ,fromIntegral (7*64+32))
+    (0,7*64+32 ,7*64+32)
   
   quit
   
@@ -249,7 +251,7 @@ main = do
 eventLoop :: Surface 
              -> Surface 
              -> (Bool,Bool,Bool,Bool) 
-             -> (Float,Float, Float) 
+             -> (Float,Int, Int) 
              -> IO ()
 eventLoop screen texture (up,down,left,right) (r,x,y) = do 
   
@@ -303,10 +305,10 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
     moveRight b (r,x,y) = if b then (r+0.02,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x + (4*cos r) 
-        y' = y + (4*sin r)
+        x' = x + (floor (4*cos r))
+        y' = y + (floor (4*sin r))
     moveDown  b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x - (2*cos r)
-        y' = y - (2*sin r)
-    movementAllowed (px,py) = testLevelArr !! (floor (px / 64),floor (py / 64)) == 0
+        x' = x - (floor (4*cos r))
+        y' = y - (floor (4*sin r))
+    movementAllowed (px,py) = testLevelArr !! (px `div` 64,py `div` 64) == 0

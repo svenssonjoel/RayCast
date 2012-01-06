@@ -22,7 +22,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
   int lineHeight = y2 - y1; 
   int clippedHeight = clipped_y2 - clipped_y1;
   int texHeight = yt2 - yt1; 
-  float ratio = (float)texHeight / lineHeight;
+  float ratio = (float)(texHeight-1) / lineHeight;
 
   int clipped_yt1 = yt1 + (int)((clipped_y1 - y1) * ratio);
   
@@ -30,7 +30,6 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
   int start  = clipped_y1 * sw + x; 
   int tstart = clipped_yt1 * 64 + xt;  
 
-  
   // assume 32bit ints.. (fix) 
   unsigned int *sp =(unsigned int*)surf->pixels;
   unsigned int *tp =(unsigned int*)text->pixels;  
@@ -43,7 +42,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
     
 
 } 
- 
+
 
 /* 
 // This code is more directly taken from "Gardens of Imagination"
