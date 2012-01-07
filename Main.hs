@@ -88,13 +88,26 @@ arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [
 
 ----------------------------------------------------------------------------
 -- some constants
-viewDistance   = 192 
-wallHeight     = 64 
-viewerHeight   = 32
-viewportCenter = 100
+viewDistance   = floor (fromIntegral windowWidth * 0.6) -- 192 at 320  
 
-windowWidth    = 320 
-windowHeight   = 200
+wallHeight, wallWidth :: Int 
+wallHeight      = 64 
+wallWidth       = 64
+
+
+textureWidth, textureHeight :: Int 
+-- Currently not used 
+textureWidth    = 64 
+textureHeight   = 64
+
+viewerHeight    = 32
+viewportCenterY = windowHeight `div` 2
+viewportCenterX = windowWidth `div` 2
+
+windowWidth     = 800  -- number of rays ! 
+windowHeight    = 600
+
+
 
 ---------------------------------------------------------------------------- 
 -- castRay2 
@@ -115,13 +128,13 @@ castRay2 world accDist ray =
              then (rayY ray .&. 0xffc0) + 64
              else (rayY ray .&. 0xffc0) -1 
                   
-    -- The gridlines are tweaked slightly to not be perfectly horizontal or vertical. 
-    -- those two cases seem to upset the ray/line intersection test. 
+    
+    -- Create two lines for intersection test
     x_line = Line (fromIntegral grid_x,-10000) (fromIntegral grid_x,10000) 
     y_line = Line (-10000,fromIntegral grid_y) (10000,fromIntegral grid_y)  
     
-    -- Does the intersection code give wrong results for 
-    -- vertical and horizontal lines ? 
+    -- intersect ray with both vertical and horizontal line
+    -- the closest one is used. 
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
     
@@ -139,6 +152,7 @@ castRay2 world accDist ray =
     value = world !! (px `div` 64, py `div` 64)
 
      
+-- TODO: improve on these (better names)   
     
 posRayDx  (Ray _ (dx,_)) = dx > 0   
 posRayDy  (Ray _ (_,dy)) = dy > 0 
@@ -155,6 +169,8 @@ type Vector2D = (Int,Int)
 type Point2D  = (Int,Int)
 
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
+
+mkRay :: Point2D -> Float -> Ray 
 mkRay p r    = Ray p (floor(1024.0*cos r), floor (1024.0*sin r))  
 
 data Line    = Line Point2D Point2D  -- Two points on line representation  
@@ -168,7 +184,7 @@ distance (x1, y1) (x2, y2) =
       yd = y2 - y1 
 
 -- Intersection between ray and line. 
--- TODO: should there be a case for coincident ray/line
+-- TODO: should there be a case for coincident ray/line 
 intersect :: Ray -> Line -> Maybe Vector2D 
 intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
                                      then Nothing 
@@ -195,6 +211,12 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
 
 ----------------------------------------------------------------------------
 -- rendering routines 
+renderView :: Array2D Int Int 
+              -> Int 
+              -> Int 
+              -> Float 
+              -> Surface 
+              -> Surface -> IO ()
 renderView world px py angle surf tex =  
     mapM_ (renderCol surf tex) distCol 
   where 
@@ -204,7 +226,10 @@ renderView world px py angle surf tex =
     -- fixes the "fish eye" phenomenom    (*cos(angle)) 
     dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
     distCol = zip dists [0..] 
-    colAngles = [atan ((fromIntegral (col-160)) / viewDistance) | col <- [0..319]] 
+    colAngles = [atan ((fromIntegral (col-viewportCenterX)) / 
+                       (fromIntegral viewDistance)) 
+                | col <- [0..windowWidth-1]
+                ] 
     
     rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
     
@@ -218,9 +243,9 @@ renderCol surf tex ((dist,i,x),c) =
   -- texturedVLine c starty endy surf  x 0 64 tex
   texVLine c starty endy surf x 0 64 tex
     where 
-      height = floor (viewDistance * wallHeight / dist)
+      height = floor (fromIntegral (viewDistance * wallHeight) / dist)
       starty = endy - height 
-      endy   = floor (viewDistance * viewerHeight / dist + viewportCenter) 
+      endy   = floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
      
       
 ----------------------------------------------------------------------------
@@ -242,7 +267,7 @@ main = do
                  
   eventLoop screen testTexture
     (False,False,False,False) -- Keyboard state
-    (0,7*64+32 ,7*64+32)
+    (0.0,7*64+32 ,7*64+32)
   
   quit
   
