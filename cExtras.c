@@ -17,6 +17,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
   int i; 
   int sh = surf->h; 
   int sw = surf->w;
+  int th = text->h;
   int clipped_y1 = y1 > 0 ? y1 : 0;
   int clipped_y2 = y2 < sh ? y2 : (sh - 1);
   int lineHeight = y2 - y1; 
@@ -28,7 +29,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
   
 
   int start  = clipped_y1 * sw + x; 
-  int tstart = clipped_yt1 * 64 + xt;  
+  int tstart = clipped_yt1 * th + xt;  
 
   // assume 32bit ints.. (fix) 
   unsigned int *sp =(unsigned int*)surf->pixels;
@@ -36,7 +37,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 
 
   for (i = 0; i <= clippedHeight; i ++)  {
-    unsigned int p = tp[tstart + ((int)(i*ratio)*64)];
+    unsigned int p = tp[tstart + ((int)(i*ratio)*th)];
     sp[start + (i*sw)] = p; 
   }  
     

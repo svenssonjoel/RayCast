@@ -89,18 +89,19 @@ arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [
 ----------------------------------------------------------------------------
 -- some constants
 viewDistance   = floor (fromIntegral windowWidth * 0.6) -- 192 at 320  
+walkSpeed      = wallWidth `div` 16
 
 wallHeight, wallWidth :: Int 
-wallHeight      = 64 
-wallWidth       = 64
-
+wallHeight      = 256
+wallWidth       = 256
+gridMask        = negate wallWidth
 
 textureWidth, textureHeight :: Int 
 -- Currently not used 
-textureWidth    = 64 
-textureHeight   = 64
+textureWidth    = 256 
+textureHeight   = 256
 
-viewerHeight    = 32
+viewerHeight    = wallHeight `div` 2
 viewportCenterY = windowHeight `div` 2
 viewportCenterX = windowWidth `div` 2
 
@@ -122,11 +123,11 @@ castRay2 world accDist ray =
         
   where 
     grid_x = if (posRayDx ray) 
-             then (rayX ray .&. 0xffc0) + 64
-             else (rayX ray .&. 0xffc0) - 1
+             then (rayX ray .&. gridMask) + wallWidth
+             else (rayX ray .&. gridMask) - 1
     grid_y = if (posRayDy ray) 
-             then (rayY ray .&. 0xffc0) + 64
-             else (rayY ray .&. 0xffc0) -1 
+             then (rayY ray .&. gridMask) + wallWidth
+             else (rayY ray .&. gridMask) -1 
                   
     
     -- Create two lines for intersection test
@@ -141,15 +142,15 @@ castRay2 world accDist ray =
     ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p `mod` 64) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p `mod` 64) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p `mod` wallWidth) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p `mod` wallWidth) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1,(snd p `mod` 64) ) 
-             else (q,d2,(fst q `mod` 64) ) 
-    value = world !! (px `div` 64, py `div` 64)
+             then (p,d1,(snd p `mod` wallWidth) ) 
+             else (q,d2,(fst q `mod` wallWidth) ) 
+    value = world !! (px `div` wallWidth, py `div` wallWidth)
 
      
 -- TODO: improve on these (better names)   
@@ -241,7 +242,7 @@ renderView world px py angle surf tex =
 renderCol surf tex ((dist,i,x),c) = 
   --vertLine c starty endy color surf
   -- texturedVLine c starty endy surf  x 0 64 tex
-  texVLine c starty endy surf x 0 64 tex
+  texVLine c starty endy surf x 0 textureHeight tex
     where 
       height = floor (fromIntegral (viewDistance * wallHeight) / dist)
       starty = endy - height 
@@ -262,12 +263,13 @@ main = do
   putStrLn$ arr2dStr$ testLevelArr
   
   let pf = surfaceGetPixelFormat screen
-  testTexture' <- loadBMP "texture2.bmp" 
+  --testTexture' <- loadBMP "texture1.bmp" 
+  testTexture' <- loadBMP "textureLarge1.bmp" 
   testTexture <- convertSurface testTexture' pf [] 
                  
   eventLoop screen testTexture
     (False,False,False,False) -- Keyboard state
-    (0.0,7*64+32 ,7*64+32)
+    (0.0,7*wallWidth ,7*wallWidth)
   
   quit
   
@@ -330,10 +332,10 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
     moveRight b (r,x,y) = if b then (r+0.02,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x + (floor (4*cos r))
-        y' = y + (floor (4*sin r))
+        x' = x + (floor ((fromIntegral walkSpeed)*cos r))
+        y' = y + (floor ((fromIntegral walkSpeed)*sin r))
     moveDown  b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x - (floor (4*cos r))
-        y' = y - (floor (4*sin r))
-    movementAllowed (px,py) = testLevelArr !! (px `div` 64,py `div` 64) == 0
+        x' = x - (floor ((fromIntegral walkSpeed)*cos r))
+        y' = y - (floor ((fromIntegral walkSpeed)*sin r))
+    movementAllowed (px,py) = testLevelArr !! (px `div` wallWidth,py `div` wallWidth) == 0
