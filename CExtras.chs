@@ -23,3 +23,14 @@ convSurface s f = do
     fromIntegral `Int',
     fromIntegral `Int',
     convSurface* `Surface' } -> `()' id  #}
+
+{# fun unsafe texturedVLineLit as texVLineLit 
+  { fromIntegral `Int' , 
+    fromIntegral `Int' , 
+    fromIntegral `Int' ,
+    convSurface* `Surface', 
+    fromIntegral `Int',
+    fromIntegral `Int',
+    fromIntegral `Int',
+    convSurface* `Surface',
+    realToFrac   `Float'  } -> `()' id  #}

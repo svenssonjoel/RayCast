@@ -91,6 +91,9 @@ arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [
 viewDistance   = floor (fromIntegral windowWidth * 0.6) -- 192 at 320  
 walkSpeed      = wallWidth `div` 16
 
+lightRadius    = 128.0
+
+
 wallHeight, wallWidth :: Int 
 wallHeight      = 256
 wallWidth       = 256
@@ -242,11 +245,20 @@ renderView world px py angle surf tex =
 renderCol surf tex ((dist,i,x),c) = 
   --vertLine c starty endy color surf
   -- texturedVLine c starty endy surf  x 0 64 tex
-  texVLine c starty endy surf x 0 textureHeight tex
-    where 
-      height = floor (fromIntegral (viewDistance * wallHeight) / dist)
-      starty = endy - height 
-      endy   = floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
+  -- texVLine c starty endy surf x 0 textureHeight tex
+  texVLineLit c 
+              starty 
+              endy 
+              surf 
+              x 
+              0 
+              textureHeight 
+              tex 
+              (min 1.0 (lightRadius/dist)) 
+  where 
+    height = floor (fromIntegral (viewDistance * wallHeight) / (max dist 4) )
+    starty = endy - height 
+    endy   = floor (fromIntegral viewportCenterY + ((fromIntegral height) / 2)) --floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
      
       
 ----------------------------------------------------------------------------
@@ -284,8 +296,8 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
   
   let pf = surfaceGetPixelFormat screen
       
-  floor <- mapRGB pf 32 64 32     -- color of floors
-  ceil  <- mapRGB pf 128 128 128  -- color of ceilings 
+  floor <- mapRGB pf 8 8 8     -- color of floors
+  ceil  <- mapRGB pf 4 4 5  -- color of ceilings 
   
  
   -- draw single colored floor and ceilings (here use 320 for widht, inconsistent?)
