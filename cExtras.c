@@ -11,6 +11,7 @@
    - Why is the Haskell version SO extremely slow ? 
 */
 
+/*
 void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 		   int xt, int yt1, int yt2, SDL_Surface *text) {
 
@@ -43,6 +44,38 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
     
 
 } 
+*/
+
+ 
+void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
+		   int xt, int yt1, int yt2, SDL_Surface *text) {
+
+  int y; 
+  int sh = surf->h; 
+  int sw = surf->w;
+  int th = text->h;
+  int clipped_y1 = y1 > 0 ? y1 : 0;
+  int clipped_y2 = y2 < sh ? y2 : (sh - 1);
+ 
+  int lineHeight = y2 - y1; 
+  int texHeight = yt2 - yt1; 
+
+  unsigned int *sp =(unsigned int*)surf->pixels;
+  unsigned int *tp =(unsigned int*)text->pixels;  
+
+  int lh128 = lineHeight*128;
+  int lh256 = lh128 << 1; 
+  int sh128 = sh*128;
+  for(y = clipped_y1; y<clipped_y2; y++){
+    int d = y * 256 - sh128 + lh128;  
+    int texY = (d * texHeight) / lh256;
+      
+     
+      sp[y * sw + x] = tp[texHeight * texY + xt];
+    } 
+}
+
+ 
 
 
 /* 
