@@ -52,6 +52,8 @@ import SDLUtils
 import System.IO.Unsafe
 
 import Foreign.Ptr
+import Foreign.Storable 
+import Foreign.Marshal.Array
 
 import CExtras
 
@@ -89,7 +91,7 @@ arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [
 ----------------------------------------------------------------------------
 -- some constants
 viewDistance   = floor (fromIntegral windowWidth * 0.6) -- 192 at 320  
-walkSpeed      = wallWidth `div` 16
+walkSpeed      = wallWidth `div` 8
 
 lightRadius    = 128.0
 
@@ -97,12 +99,15 @@ lightRadius    = 128.0
 wallHeight, wallWidth :: Int 
 wallHeight      = 256
 wallWidth       = 256
-gridMask        = negate wallWidth
+gridMask        = negate (wallWidth - 1)
+
+modMask         = 255
 
 textureWidth, textureHeight :: Int 
 -- Currently not used 
 textureWidth    = 256 
 textureHeight   = 256
+
 
 viewerHeight    = wallHeight `div` 2
 viewportCenterY = windowHeight `div` 2
@@ -260,7 +265,47 @@ renderCol surf tex ((dist,i,x),c) =
     starty = endy - height 
     endy   = floor (fromIntegral viewportCenterY + ((fromIntegral height) / 2)) --floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
      
+----------------------------------------------------------------------------      
+-- Cast for floors 
+             
+floorCast :: Array2D Int Int -> Float -> Int -> Int ->  Surface -> Surface -> IO ()              
+floorCast world angle px py texture surf = 
+    sequence_ [floorCastColumn world angle px py texture surf col
+               | col <- [0..windowWidth-1]]
       
+    
+
+-- Approach to try next is to draw line by line  
+floorCastColumn :: Array2D Int Int -> Float -> Int -> Int -> Surface -> Surface -> Int -> IO ()
+floorCastColumn world angle px py texture surf col = 
+  do 
+    sequence_ [renderPoint texture surf r col (x,y)  
+               | (r,(x,y))<- zip rows ps]  
+  where 
+    radians = angle + columnAngle
+    columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
+    rows = [viewportCenterY..windowHeight-1]              
+    rowRatios = [(fromIntegral viewerHeight / fromIntegral (row - viewportCenterY))
+                | row <- rows] 
+    rowDistances = [ (r * fromIntegral viewDistance) / cos columnAngle | r <- rowRatios]
+    ps = [(fromIntegral px  + distance * cos radians  
+           ,fromIntegral py +  distance * sin radians )
+         | distance <- rowDistances] 
+         
+    renderPoint :: Surface -> Surface -> Int -> Int -> (Float,Float) -> IO ()      
+    renderPoint tex surf row col (x,y) = 
+      do 
+        pixels <- castPtr `fmap` surfaceGetPixels surf 
+        texels <- castPtr `fmap` surfaceGetPixels tex
+        p <- peekElemOff texels t :: IO Word32
+        
+        pokeElemOff pixels r p -- (0xFFFFFFFF :: Word32) -- (p :: Word32)
+        -- putStrLn $ show (floor x .&. gridMask) ++ " " ++ show (floor y .&. gridMask)
+        where 
+          t = (floor y .&. modMask) * textureWidth + (floor x .&. modMask) 
+          r = row * windowWidth + col
+        
+             
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
@@ -278,8 +323,11 @@ main = do
   --testTexture' <- loadBMP "texture1.bmp" 
   testTexture' <- loadBMP "textureLarge1.bmp" 
   testTexture <- convertSurface testTexture' pf [] 
+  floorTex'   <- loadBMP "textureFloor1.bmp"            
+  floorTex    <- convertSurface floorTex' pf [] 
                  
-  eventLoop screen testTexture
+                 
+  eventLoop screen testTexture floorTex
     (False,False,False,False) -- Keyboard state
     (0.0,7*wallWidth ,7*wallWidth)
   
@@ -289,10 +337,11 @@ main = do
 -- process events and draw graphics 
 eventLoop :: Surface 
              -> Surface 
+             -> Surface 
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Int, Int) 
              -> IO ()
-eventLoop screen texture (up,down,left,right) (r,x,y) = do 
+eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
       
@@ -302,11 +351,13 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
  
   -- draw single colored floor and ceilings (here use 320 for widht, inconsistent?)
   fillRect screen (Just (Rect 0 0 windowWidth (windowHeight `div` 2))) ceil    
-  fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
+  -- fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
   -- draw all the visible walls
+  floorCast  testLevelArr r x y fltex screen
   renderView testLevelArr x y r screen texture
-
+  -- TODO: order of arguments is messed up!
+  
   SDL.flip screen
   
   -- process events 
@@ -335,13 +386,13 @@ eventLoop screen texture (up,down,left,right) (r,x,y) = do
   
   let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
 
-  unless b $ eventLoop screen texture (up',down',left',right') (r',x',y')     
+  unless b $ eventLoop screen texture fltex (up',down',left',right') (r',x',y')     
   
   
   -- very crude colision against walls added
   where 
-    moveLeft  b (r,x,y) = if b then (r-0.02,x,y) else (r,x,y) 
-    moveRight b (r,x,y) = if b then (r+0.02,x,y) else (r,x,y) 
+    moveLeft  b (r,x,y) = if b then (r-0.04,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
         x' = x + (floor ((fromIntegral walkSpeed)*cos r))
