@@ -240,7 +240,7 @@ renderView world px py angle surf tex =
     results = map (castRay2 world 0.0) rays 
 
 
-
+    
 -- draw a single column into surf
 renderCol surf tex ((dist,i,x),c) = 
   --vertLine c starty endy color surf
