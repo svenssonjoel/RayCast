@@ -40,12 +40,14 @@ module Main where
 import Prelude hiding ((!!))
 import Graphics.UI.SDL as SDL
 
-import Data.Bits
+
 
 import Control.Monad
 import Data.Array
 
 import Data.Word
+import Data.Bits
+
 
 import SDLUtils 
 
@@ -56,7 +58,7 @@ import Foreign.Storable
 import Foreign.Marshal.Array
 
 import CExtras
-
+import MathExtras
 ----------------------------------------------------------------------------
 --
     
@@ -303,7 +305,33 @@ floorCastColumn world angle px py tex surf col =
     ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY)
     rowDistance row = (ratioHeightRow row * fromIntegral viewDistance) / cos columnAngle     
          
-                      
+    renderPoint :: Ptr Word32 -> Ptr Word32 -> Int -> Int -> (Float,Float,Float) -> IO ()      
+    renderPoint tex surf row col (x,y,dist) = 
+      do 
+        -- Read one Word32 instead of 4 word8
+        p  <- peekElemOff tex t 
+        
+        let i = (min 1.0 (lightRadius/dist)) 
+        let p0  = p .&. 255 
+            p1  = p `shiftR` 8 .&. 255 
+            p2  = p `shiftR` 16 .&. 255 
+            -- p3  = p `shiftR` 24 .&. 255 
+            p0' =  floor_ $ i * (fromIntegral p0) 
+            p1' =  floor_ $ i * (fromIntegral p1) 
+            p2' =  floor_ $ i * (fromIntegral p2) 
+                        
+            p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
+        
+        pokeElemOff surf r  p'     -- floor... 
+        pokeElemOff surf r2 p'        
+       
+        
+        where 
+          t  = ((floor y .&. modMask) * textureWidth + (floor x .&. modMask))
+          r  = (row * windowWidth + col)
+          r2 = ((windowHeight-row) * windowWidth + col )
+          
+    {-                   
     renderPoint :: Ptr Word8 -> Ptr Word8 -> Int -> Int -> (Float,Float,Float) -> IO ()      
     renderPoint tex surf row col (x,y,dist) = 
       do 
@@ -333,7 +361,7 @@ floorCastColumn world angle px py tex surf col =
           t = 4 * ((floor y .&. modMask) * textureWidth + (floor x .&. modMask))
           r = 4 * (row * windowWidth + col)
           r2 =4 * ((windowHeight-row) * windowWidth + col )
-             
+      -}       
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
