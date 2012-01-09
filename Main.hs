@@ -206,12 +206,14 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0
    x = (b2*c1 - b1*c2)  `div` det 
    y = (a1*c2 - a2*c1)  `div` det
 
+--convertRay :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
 convertRay  (x, y) (dx, dy) = (a,b,c) 
   where 
     a = dy             -- (y+dy) - y  
     b = -dx            -- x - (x+dx)
     c = a*x+b*y
    
+--convertLine :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
 convertLine (x1,y1) (x2,y2) = (a,b,c) 
   where 
     a = y2 - y1 
@@ -276,35 +278,61 @@ floorCast world angle px py texture surf =
     
 
 -- Approach to try next is to draw line by line  
+-- This draws column by column
+--  + a Hack to draw ceilings as well. 
+-- TODO: Right now this completely ignores the map passed in
 floorCastColumn :: Array2D Int Int -> Float -> Int -> Int -> Surface -> Surface -> Int -> IO ()
-floorCastColumn world angle px py texture surf col = 
+floorCastColumn world angle px py tex surf col = 
   do 
-    sequence_ [renderPoint texture surf r col (x,y)  
-               | (r,(x,y))<- zip rows ps]  
+    pixels <- castPtr `fmap` surfaceGetPixels surf 
+    texels <- castPtr `fmap` surfaceGetPixels tex
+       
+    sequence_ [renderPoint texels pixels r col xyd  
+               | (r,xyd)<- zip rows ps]  
   where 
     radians = angle + columnAngle
     columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
     rows = [viewportCenterY..windowHeight-1]              
-    rowRatios = [(fromIntegral viewerHeight / fromIntegral (row - viewportCenterY))
-                | row <- rows] 
-    rowDistances = [ (r * fromIntegral viewDistance) / cos columnAngle | r <- rowRatios]
-    ps = [(fromIntegral px  + distance * cos radians  
-           ,fromIntegral py +  distance * sin radians )
-         | distance <- rowDistances] 
+
+
+    ps = [(fromIntegral px  + distance * cos radians 
+           ,fromIntegral py +  distance * sin radians,distance )
+         | r <- rows
+         , let distance = rowDistance r] 
          
-    renderPoint :: Surface -> Surface -> Int -> Int -> (Float,Float) -> IO ()      
-    renderPoint tex surf row col (x,y) = 
+    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY)
+    rowDistance row = (ratioHeightRow row * fromIntegral viewDistance) / cos columnAngle     
+         
+                      
+    renderPoint :: Ptr Word8 -> Ptr Word8 -> Int -> Int -> (Float,Float,Float) -> IO ()      
+    renderPoint tex surf row col (x,y,dist) = 
       do 
-        pixels <- castPtr `fmap` surfaceGetPixels surf 
-        texels <- castPtr `fmap` surfaceGetPixels tex
-        p <- peekElemOff texels t :: IO Word32
+        -- Read one Word32 instead of 4 word8
+        p0 <- peekElemOff tex t 
+        p1 <- peekElemOff tex (t+1) 
+        p2 <- peekElemOff tex (t+2) 
+        p3 <- peekElemOff tex (t+3) 
         
-        pokeElemOff pixels r p -- (0xFFFFFFFF :: Word32) -- (p :: Word32)
-        -- putStrLn $ show (floor x .&. gridMask) ++ " " ++ show (floor y .&. gridMask)
+        let i = (min 1.0 (lightRadius/dist)) 
+        let p0' = floor $ i * (fromIntegral p0) 
+            p1' = floor $ i * (fromIntegral p0) 
+            p2' = floor $ i * (fromIntegral p0) 
+        
+        pokeElemOff surf r p0'      -- floor... 
+        pokeElemOff surf (r+1) p1'  
+        pokeElemOff surf (r+2) p2'  
+        pokeElemOff surf (r+3) p3   
+       
+        pokeElemOff surf r2 p0'      -- ceiling... 
+        pokeElemOff surf (r2+1) p1'   
+        pokeElemOff surf (r2+2) p2'   
+        pokeElemOff surf (r2+3) p3    
+       
+        
         where 
-          t = (floor y .&. modMask) * textureWidth + (floor x .&. modMask) 
-          r = row * windowWidth + col
-        
+          t = 4 * ((floor y .&. modMask) * textureWidth + (floor x .&. modMask))
+          r = 4 * (row * windowWidth + col)
+          r2 =4 * ((windowHeight-row) * windowWidth + col )
              
 ----------------------------------------------------------------------------
 -- Main !
@@ -320,7 +348,7 @@ main = do
   putStrLn$ arr2dStr$ testLevelArr
   
   let pf = surfaceGetPixelFormat screen
-  --testTexture' <- loadBMP "texture1.bmp" 
+      
   testTexture' <- loadBMP "textureLarge1.bmp" 
   testTexture <- convertSurface testTexture' pf [] 
   floorTex'   <- loadBMP "textureFloor1.bmp"            
