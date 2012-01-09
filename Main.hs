@@ -182,7 +182,7 @@ type Point2D  = (Int,Int)
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
 
 mkRay :: Point2D -> Float -> Ray 
-mkRay p r    = Ray p (floor(1024.0*cos r), floor (1024.0*sin r))  
+mkRay p r    = Ray p (floori_(1024.0*cos r), floori_ (1024.0*sin r))  
 
 data Line    = Line Point2D Point2D  -- Two points on line representation  
 
@@ -265,9 +265,9 @@ renderCol surf tex ((dist,i,x),c) =
               tex 
               (min 1.0 (lightRadius/dist)) 
   where 
-    height = floor (fromIntegral (viewDistance * wallHeight) / (max dist 4) )
+    height = floori_ (fromIntegral (viewDistance * wallHeight) / (max dist 4) )
     starty = endy - height 
-    endy   = floor (fromIntegral viewportCenterY + ((fromIntegral height) / 2)) --floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
+    endy   = floori_ (fromIntegral viewportCenterY + ((fromIntegral height) / 2)) --floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
      
 ----------------------------------------------------------------------------      
 -- Cast for floors 
@@ -323,11 +323,11 @@ floorCastColumn world angle px py tex surf col =
             p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
         
         pokeElemOff surf r  p'     -- floor... 
-        pokeElemOff surf r2 p'        
+        pokeElemOff surf r2 p'     -- ceiling...   
        
         
         where 
-          t  = ((floor y .&. modMask) * textureWidth + (floor x .&. modMask))
+          t  = ((floori_ y .&. modMask) * textureWidth + (floori_ x .&. modMask))
           r  = (row * windowWidth + col)
           r2 = ((windowHeight-row) * windowWidth + col )
           
@@ -451,10 +451,10 @@ eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do
     moveRight b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x + (floor ((fromIntegral walkSpeed)*cos r))
-        y' = y + (floor ((fromIntegral walkSpeed)*sin r))
+        x' = x + (floori_ ((fromIntegral walkSpeed)*cos r))
+        y' = y + (floori_ ((fromIntegral walkSpeed)*sin r))
     moveDown  b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x - (floor ((fromIntegral walkSpeed)*cos r))
-        y' = y - (floor ((fromIntegral walkSpeed)*sin r))
+        x' = x - (floori_ ((fromIntegral walkSpeed)*cos r))
+        y' = y - (floori_ ((fromIntegral walkSpeed)*sin r))
     movementAllowed (px,py) = testLevelArr !! (px `div` wallWidth,py `div` wallWidth) == 0
