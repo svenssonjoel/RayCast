@@ -87,7 +87,8 @@ testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
 
 
-(!!) arr (x,y) = (arr ! y) ! x  
+--(!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
+(!!) arr (x,y) = (arr ! y) ! x 
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
 ----------------------------------------------------------------------------
@@ -141,8 +142,8 @@ castRay2 world accDist ray =
                   
     
     -- Create two lines for intersection test
-    x_line = Line (fromIntegral grid_x,-10000) (fromIntegral grid_x,10000) 
-    y_line = Line (-10000,fromIntegral grid_y) (10000,fromIntegral grid_y)  
+    x_line = Line (fromIntegral grid_x,-1) (fromIntegral grid_x,1) 
+    y_line = Line (-1,fromIntegral grid_y) (1,fromIntegral grid_y)  
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
@@ -199,13 +200,13 @@ distance (x1, y1) (x2, y2) =
 intersect :: Ray -> Line -> Maybe Vector2D 
 intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
                                      then Nothing 
-                                     else (Just (x, y)) 
+                                     else (Just (x,y)) 
  where  
    (a1,b1,c1) = convertRay p1 d1
    (a2,b2,c2) = convertLine p2 d2 
    det = a1*b2 - a2*b1
    
-   x = (b2*c1 - b1*c2)  `div` det 
+   x = (b2*c1 - b1*c2)  `div` det
    y = (a1*c2 - a2*c1)  `div` det
 
 --convertRay :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
@@ -220,7 +221,7 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
   where 
     a = y2 - y1 
     b = x1 - x2
-    c = a*x1+b*y1
+    c = a*x1+b*y1 
 
 ----------------------------------------------------------------------------
 -- rendering routines 
@@ -341,7 +342,7 @@ main = do
 
   
   screen <- getVideoSurface
-  toggleFullscreen screen
+  -- toggleFullscreen screen
   
   putStrLn$ arr2dStr$ testLevelArr
   
