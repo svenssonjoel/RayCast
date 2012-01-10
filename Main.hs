@@ -252,9 +252,10 @@ renderView world px py angle surf tex =
     
 -- draw a single column into surf
 renderCol surf tex ((dist,i,x),c) = 
-  --vertLine c starty endy color surf
+  -- vertLine c starty endy color surf
   -- texturedVLine c starty endy surf  x 0 64 tex
   -- texVLine c starty endy surf x 0 textureHeight tex
+  
   texVLineLit c 
               starty 
               endy 
@@ -264,6 +265,7 @@ renderCol surf tex ((dist,i,x),c) =
               textureHeight 
               tex 
               (min 1.0 (lightRadius/dist)) 
+
   where 
     height = floori_ (fromIntegral (viewDistance * wallHeight) / (max dist 4) )
     starty = endy - height 
@@ -277,8 +279,6 @@ floorCast world angle px py texture surf =
     sequence_ [floorCastColumn world angle px py texture surf col
                | col <- [0..windowWidth-1]]
       
-    
-
 -- Approach to try next is to draw line by line  
 -- This draws column by column
 --  + a Hack to draw ceilings as well. 
@@ -331,37 +331,7 @@ floorCastColumn world angle px py tex surf col =
           r  = (row * windowWidth + col)
           r2 = ((windowHeight-row) * windowWidth + col )
           
-    {-                   
-    renderPoint :: Ptr Word8 -> Ptr Word8 -> Int -> Int -> (Float,Float,Float) -> IO ()      
-    renderPoint tex surf row col (x,y,dist) = 
-      do 
-        -- Read one Word32 instead of 4 word8
-        p0 <- peekElemOff tex t 
-        p1 <- peekElemOff tex (t+1) 
-        p2 <- peekElemOff tex (t+2) 
-        p3 <- peekElemOff tex (t+3) 
-        
-        let i = (min 1.0 (lightRadius/dist)) 
-        let p0' = floor $ i * (fromIntegral p0) 
-            p1' = floor $ i * (fromIntegral p0) 
-            p2' = floor $ i * (fromIntegral p0) 
-        
-        pokeElemOff surf r p0'      -- floor... 
-        pokeElemOff surf (r+1) p1'  
-        pokeElemOff surf (r+2) p2'  
-        pokeElemOff surf (r+3) p3   
-       
-        pokeElemOff surf r2 p0'      -- ceiling... 
-        pokeElemOff surf (r2+1) p1'   
-        pokeElemOff surf (r2+2) p2'   
-        pokeElemOff surf (r2+3) p3    
-       
-        
-        where 
-          t = 4 * ((floor y .&. modMask) * textureWidth + (floor x .&. modMask))
-          r = 4 * (row * windowWidth + col)
-          r2 =4 * ((windowHeight-row) * windowWidth + col )
-      -}       
+
 ----------------------------------------------------------------------------
 -- Main !
 main = do 

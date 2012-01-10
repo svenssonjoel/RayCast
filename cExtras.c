@@ -1,11 +1,70 @@
 
 #include <SDL/SDL.h> 
 
-#include <stdio.h>
+// #include <stdio.h>
 
+void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
+		   int xt, int yt0, int yt1, SDL_Surface *text) {
+
+  int y; 
+  int sh = surf->h; 
+  int sw = surf->w;
+  int th = text->h;
+  int clipped_y1 = y0 > 0 ? y0 : 0;
+  int clipped_y2 = y1 < sh ? y1 : sh;
  
+  int lineHeight = y1 - y0; 
+  int texHeight = yt1 - yt0; 
+
+  unsigned int *sp =(unsigned int*)surf->pixels;
+  unsigned int *tp =(unsigned int*)text->pixels;  
+  
+  float ratio = (float)texHeight / lineHeight;
+    
+  for(y = clipped_y1; y<clipped_y2; y++){
+    
+    int ty = (y - y0) * ratio;
+    
+    sp[y * sw + x] = tp[texHeight * ty + xt];
+  } 
+}
+ 
+
+void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
+		      int xt, int yt0, int yt1, SDL_Surface *text, float intensity) {
+
+  int y; 
+  int sh = surf->h; 
+  int sw = surf->w;
+  int th = text->h;
+  int clipped_y1 = y0 > 0 ? y0 : 0;
+  int clipped_y2 = y1 < sh ? y1 : sh;
+ 
+  int lineHeight = y1 - y0; 
+  int texHeight = yt1 - yt0; 
+
+  unsigned char *sp =(unsigned char*)surf->pixels;
+  unsigned char *tp =(unsigned char*)text->pixels;  
+
+  float ratio = (float)texHeight / lineHeight;
+  
+  for(y = clipped_y1; y<clipped_y2; y++){
+    
+    float ty = (y - y0) * ratio;
+
+
+    sp[4 *(y * sw + x)]   = intensity * tp[4*(texHeight * (int)ty + xt)];
+    sp[4 *(y * sw + x)+1] = intensity * tp[4*(texHeight * (int)ty + xt)+1];
+    sp[4 *(y * sw + x)+2] = intensity * tp[4*(texHeight * (int)ty + xt)+2];
+    //sp[4 *(y * sw + x)+3] = tp[4*(texHeight * texY + xt)+3];
+
+  } 
+}
+
+
+
 /* Textured vertical line that borrows ideas from http://lodev.org/cgtutor/raycasting.html */
-   
+/*   
 void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 		   int xt, int yt1, int yt2, SDL_Surface *text) {
 
@@ -14,7 +73,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
   int sw = surf->w;
   int th = text->h;
   int clipped_y1 = y1 > 0 ? y1 : 0;
-  int clipped_y2 = y2 < sh ? y2 : (sh - 1);
+  int clipped_y2 = y2 < sh ? y2 : sh;
  
   int lineHeight = y2 - y1; 
   int texHeight = yt2 - yt1; 
@@ -46,17 +105,15 @@ void texturedVLineLit(int x, int y1, int y2, SDL_Surface *surf,
   int sw = surf->w;
   int th = text->h;
   int clipped_y1 = y1 > 0 ? y1 : 0;
-  int clipped_y2 = y2 < sh ? y2 : (sh - 1);
+  int clipped_y2 = y2 < sh ? y2 : sh;
  
   int lineHeight = y2 - y1; 
   int texHeight = yt2 - yt1; 
-  if (texHeight == 0) texHeight = 1;
+  // if (texHeight == 0) texHeight = 1;
 
   unsigned char *sp =(unsigned char*)surf->pixels;
   unsigned char *tp =(unsigned char*)text->pixels;  
 
-  // printf("tex: %d %d\nsurf: %d %d\n", yt1, yt2, y1, y2);
-  
   int lh128 = lineHeight*128;
   int lh256 = lh128 << 1; 
   int sh128 = sh*128;
@@ -75,7 +132,7 @@ void texturedVLineLit(int x, int y1, int y2, SDL_Surface *surf,
   } 
 }
 
-
+*/
 
  
 

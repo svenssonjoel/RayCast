@@ -1,11 +1,23 @@
 
 
 * RayCast
-  A retro raycaster with textured walls written in Haskell and C. 
+  A retro raycaster written in Haskell and C. 
+ 
+  + Textured walls
+  + Textured floors and ceilings 
+  + crude collision against walls detection
   
   
 * TODOs 
   + Figure out how to Profile (SDL library made for profiling needed).
   + Colision agains walls needs improvement.  
-  + Texturemapped floors and ceilings.  
+  + Add "sprites" (for items and enemies) 
+  + Add Doors 
+
+* Notes 
+  + The Haskell floor function was extremely slow. All calls to floor 
+    have been replaced by calls to floor_ and floori_. Both of those 
+    are implemented using the C floorf function and the FFI.
+
+
   
