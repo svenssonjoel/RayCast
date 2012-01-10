@@ -87,8 +87,8 @@ testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
 
 
-(!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
---(!!) arr (x,y) = (arr ! y) ! x 
+-- (!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
+(!!) arr (x,y) = (arr ! y) ! x 
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
 ----------------------------------------------------------------------------
