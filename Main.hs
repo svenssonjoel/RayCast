@@ -87,8 +87,8 @@ testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
 
 
---(!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
-(!!) arr (x,y) = (arr ! y) ! x 
+(!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
+--(!!) arr (x,y) = (arr ! y) ! x 
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
 ----------------------------------------------------------------------------
@@ -142,13 +142,13 @@ castRay2 world accDist ray =
                   
     
     -- Create two lines for intersection test
-    x_line = Line (fromIntegral grid_x,-1) (fromIntegral grid_x,1) 
-    y_line = Line (-1,fromIntegral grid_y) (1,fromIntegral grid_y)  
+    x_line = Line (fromIntegral grid_x,0) (fromIntegral grid_x,1) 
+    y_line = Line (0,fromIntegral grid_y) (1,fromIntegral grid_y)  
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
-    x_intersect = intersect ray x_line 
-    y_intersect = intersect ray y_line
+    x_intersect = intersectX ray x_line 
+    y_intersect = intersectY ray y_line
     
     ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
@@ -183,17 +183,39 @@ type Point2D  = (Int,Int)
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
 
 mkRay :: Point2D -> Float -> Ray 
-mkRay p r    = Ray p (floori_(1024.0*cos r), floori_ (1024.0*sin r))  
+mkRay p r    = Ray p (floori_ (1024.0*cos r), floori_ (1024.0*sin r))  
 
 data Line    = Line Point2D Point2D  -- Two points on line representation  
 
 
-distance :: Vector2D -> Vector2D -> Float
+distance :: Point2D -> Point2D -> Float
 distance (x1, y1) (x2, y2) = 
   sqrt $ fromIntegral (xd*xd+yd*yd)
     where 
-      xd = x2 - x1 
-      yd = y2 - y1 
+      xd = abs(x2 - x1)
+      yd = abs(y2 - y1)
+
+
+intersectX :: Ray -> Line -> Maybe Vector2D 
+intersectX (Ray r1 d1) (Line p1 p2) =  Just (fst p1,snd r1 + floori_ ysect  )	
+  where	
+    d     = fst p1 - fst r1
+    divisor = if fst d1 == 0 then 0.0001 else fromIntegral (fst d1)
+    ratio' = fromIntegral (snd d1) / divisor
+    ratio  = if ratio' == 0.0 then  1.0 else ratio'
+    ysect = fromIntegral d * ratio
+
+intersectY :: Ray -> Line -> Maybe Vector2D 
+intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )	
+  where	
+    d     = snd p1 - snd r1
+    divisor = if snd d1 == 0 then 0.0001 else fromIntegral (snd d1)
+    ratio' = fromIntegral (fst d1) / divisor
+    ratio  = if ratio' == 0.0 then 1.0 else ratio'
+    xsect = fromIntegral d * ratio
+
+
+
 
 -- Intersection between ray and line. 
 -- TODO: should there be a case for coincident ray/line 
