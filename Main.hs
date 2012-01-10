@@ -47,7 +47,7 @@ import Data.Array
 
 import Data.Word
 import Data.Bits
-
+import Data.Int
 
 import SDLUtils 
 
@@ -82,13 +82,13 @@ testLevel = [[1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2],
 
 type Array2D i e = Array i (Array i e)
 
-testLevelArr :: Array2D Int Int 
+testLevelArr :: Array2D Int32 Int32 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
 
 
--- (!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
-(!!) arr (x,y) = (arr ! y) ! x 
+(!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
+--(!!) arr (x,y) = (arr ! y) ! x 
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
 ----------------------------------------------------------------------------
@@ -99,14 +99,14 @@ walkSpeed      = wallWidth `div` 8
 lightRadius    = 128.0
 
 
-wallHeight, wallWidth :: Int 
+wallHeight, wallWidth :: Int32 
 wallHeight      = 256
 wallWidth       = 256
 gridMask        = negate (wallWidth - 1)
 
 modMask         = 255
 
-textureWidth, textureHeight :: Int 
+textureWidth, textureHeight :: Int32 
 -- Currently not used 
 textureWidth    = 256 
 textureHeight   = 256
@@ -123,7 +123,7 @@ windowHeight    = 600
 
 ---------------------------------------------------------------------------- 
 -- castRay2 
-castRay2 :: Array2D Int Int -> Float -> Ray  -> (Float,Int,Int)
+castRay2 :: Array2D Int32 Int32 -> Float -> Ray  -> (Float,Int32,Int32)
 castRay2 world accDist ray = 
     if (value > 0) -- ray has struck solid wall
     then (accDist+dist,value,offs) 
@@ -177,8 +177,8 @@ rayDeltas (Ray _ d) = d
 
 ---------------------------------------------------------------------------- 
 -- 
-type Vector2D = (Int,Int) 
-type Point2D  = (Int,Int)
+type Vector2D = (Int32,Int32) 
+type Point2D  = (Int32,Int32)
 
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
 
@@ -216,7 +216,7 @@ intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )
 
 
 
-
+{- 
 -- Intersection between ray and line. 
 -- TODO: should there be a case for coincident ray/line 
 intersect :: Ray -> Line -> Maybe Vector2D 
@@ -245,11 +245,12 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
     b = x1 - x2
     c = a*x1+b*y1 
 
+-}
 ----------------------------------------------------------------------------
 -- rendering routines 
-renderView :: Array2D Int Int 
-              -> Int 
-              -> Int 
+renderView :: Array2D Int32 Int32 
+              -> Int32 
+              -> Int32 
               -> Float 
               -> Surface 
               -> Surface -> IO ()
@@ -279,13 +280,13 @@ renderCol surf tex ((dist,i,x),c) =
   -- texturedVLine c starty endy surf  x 0 64 tex
   -- texVLine c starty endy surf x 0 textureHeight tex
   
-  texVLineLit c 
-              starty 
-              endy 
+  texVLineLit (fromIntegral c) 
+              (fromIntegral starty) 
+              (fromIntegral endy) 
               surf 
-              x 
+              (fromIntegral x) 
               0 
-              textureHeight 
+              (fromIntegral textureHeight) 
               tex 
               (min 1.0 (lightRadius/dist)) 
 
@@ -297,7 +298,7 @@ renderCol surf tex ((dist,i,x),c) =
 ----------------------------------------------------------------------------      
 -- Cast for floors 
              
-floorCast :: Array2D Int Int -> Float -> Int -> Int ->  Surface -> Surface -> IO ()              
+floorCast :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 ->  Surface -> Surface -> IO ()              
 floorCast world angle px py texture surf = 
     sequence_ [floorCastColumn world angle px py texture surf col
                | col <- [0..windowWidth-1]]
@@ -306,7 +307,7 @@ floorCast world angle px py texture surf =
 -- This draws column by column
 --  + a Hack to draw ceilings as well. 
 -- TODO: Right now this completely ignores the map passed in
-floorCastColumn :: Array2D Int Int -> Float -> Int -> Int -> Surface -> Surface -> Int -> IO ()
+floorCastColumn :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 -> Surface -> Surface -> Int32 -> IO ()
 floorCastColumn world angle px py tex surf col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
@@ -328,11 +329,11 @@ floorCastColumn world angle px py tex surf col =
     ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY)
     rowDistance row = (ratioHeightRow row * fromIntegral viewDistance) / cos columnAngle     
          
-    renderPoint :: Ptr Word32 -> Ptr Word32 -> Int -> Int -> (Float,Float,Float) -> IO ()      
+    renderPoint :: Ptr Word32 -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
     renderPoint tex surf row col (x,y,dist) = 
       do 
         -- Read one Word32 instead of 4 word8
-        p  <- peekElemOff tex t 
+        p  <- peekElemOff tex (fromIntegral t) 
         
         let i = (min 1.0 (lightRadius/dist)) 
         let p0  = p .&. 255 
@@ -345,8 +346,8 @@ floorCastColumn world angle px py tex surf col =
                         
             p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
         
-        pokeElemOff surf r  p'     -- floor... 
-        pokeElemOff surf r2 p'     -- ceiling...   
+        pokeElemOff surf (fromIntegral r)  p'     -- floor... 
+        pokeElemOff surf (fromIntegral r2) p'     -- ceiling...   
        
         
         where 
@@ -360,7 +361,8 @@ floorCastColumn world angle px py tex surf col =
 main = do 
   SDL.init [InitEverything] 
   
-  setVideoMode windowWidth windowHeight 32 []
+  setVideoMode (fromIntegral windowWidth) 
+               (fromIntegral windowHeight) 32 []
 
   
   screen <- getVideoSurface
@@ -388,7 +390,7 @@ eventLoop :: Surface
              -> Surface 
              -> Surface 
              -> (Bool,Bool,Bool,Bool) 
-             -> (Float,Int, Int) 
+             -> (Float,Int32, Int32) 
              -> IO ()
 eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do 
   
@@ -399,7 +401,7 @@ eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do
   
  
   -- draw single colored floor and ceilings (here use 320 for widht, inconsistent?)
-  fillRect screen (Just (Rect 0 0 windowWidth (windowHeight `div` 2))) ceil    
+  -- fillRect screen (Just (Rect 0 0 windowWidth (windowHeight `div` 2))) ceil    
   -- fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
   -- draw all the visible walls
