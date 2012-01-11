@@ -373,7 +373,7 @@ main = do
       
   testTexture' <- loadBMP "textureLarge1.bmp" 
   testTexture <- convertSurface testTexture' pf [] 
-  floorTex'   <- loadBMP "textureFloor1.bmp"            
+  floorTex'   <- loadBMP "floor1.bmp"            
   floorTex    <- convertSurface floorTex' pf [] 
                  
                  
