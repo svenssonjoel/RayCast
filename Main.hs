@@ -3,23 +3,7 @@
 
   This is an attempt to Haskellify the code from 
   Christopher Lamptons Book "Gardens of Imagination" 
-  
-  TODO 
-   * Clean up code (make use of Haskell!) 
-   * Improve modularity  
-   * Collision detection
-   * There is some problem with the line intersection code. 
-   * Right now the line intersection code is very sensitive      
-     and I fear it might break down.
-     + The line intersection code seems to have problems 
-       with vertical and horizontal lines... 
-   * If a ray fails to hit any wall (which should be rare) 
-     it should be quite ok to just use the result of a neighbouring 
-     ray. 
-   * If a "level" is correct no ray should ever completely miss all walls. 
-     (And if it does something is wrong in the line-line intersection calculation) 
-
-
+ 
   **************************************
   This is also an exercise in using SDL. 
   
@@ -83,9 +67,6 @@ type Array2D i e = Array i (Array i e)
 testLevelArr :: Array2D Int32 Int32 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 
-
-
--- (!!) arr (x,y) = if x >= 0 && x <= 15 && y >= 0 && y <= 15 then  (arr ! y) ! x  else 1
 (!!) arr (x,y) = (arr ! y) ! x 
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
@@ -100,12 +81,10 @@ lightRadius    = 128.0
 wallHeight, wallWidth :: Int32 
 wallHeight      = 256
 wallWidth       = 256
-gridMask        = negate (wallWidth - 1)
-
-modMask         = 255
+gridMask        = negate (wallWidth - 1) -- used to find gridlines
+modMask         = 255                    -- used to get value `mod` 256 by an and operation
 
 textureWidth, textureHeight :: Int32 
--- Currently not used 
 textureWidth    = 256 
 textureHeight   = 256
 
@@ -183,7 +162,7 @@ data Ray     = Ray  Point2D Vector2D -- Point direction representation
 mkRay :: Point2D -> Float -> Ray 
 mkRay p r    = Ray p (floori_ (1024.0*cos r), floori_ (1024.0*sin r))  
 
-data Line    = Line Point2D Point2D  -- Two points on line representation  
+data Line    = Line Point2D Point2D -- two points on the line  
 
 distance :: Point2D -> Point2D -> Float
 distance (x1, y1) (x2, y2) = 
@@ -252,11 +231,10 @@ renderView :: Array2D Int32 Int32
 renderView world px py angle surf tex =  
     mapM_ (renderCol surf tex) distCol 
   where 
-    -- avoid div by zero (but does it ever really happen?) 
     dists'   =  results -- map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
     
     -- fixes the "fish eye" phenomenom    (*cos(angle)) 
-    dists    = zipWith (\(dist,i,x) angle -> (dist*cos(angle),i,x)) dists' colAngles 
+    dists    = zipWith (\(dist,i,x) r -> (dist*cos(r),i,x)) dists' colAngles 
     distCol = zip dists [0..] 
     colAngles = [atan ((fromIntegral c) / 
                        (fromIntegral viewDistance)) 
