@@ -371,9 +371,9 @@ main = do
   
   let pf = surfaceGetPixelFormat screen
       
-  testTexture' <- loadBMP "textureLarge1.bmp" 
+  testTexture' <- loadBMP "Data/textureLarge1.bmp" 
   testTexture <- convertSurface testTexture' pf [] 
-  floorTex'   <- loadBMP "floor1.bmp"            
+  floorTex'   <- loadBMP "Data/floor1.bmp"            
   floorTex    <- convertSurface floorTex' pf [] 
                  
                  
