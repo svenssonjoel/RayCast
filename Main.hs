@@ -20,6 +20,7 @@
 module Main where 
 
 import Prelude hiding ((!!))
+import qualified Prelude as P
 import Graphics.UI.SDL as SDL
 
 
@@ -60,12 +61,32 @@ testLevel = [[1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2]] 
-
+            
+testFloor = [[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
+             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3]]
 
 type Array2D i e = Array i (Array i e)
 
 testLevelArr :: Array2D Int32 Int32 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
+testLevelFloorArr :: Array2D Int32 Int32 
+testLevelFloorArr = listArray (0,15) (map (listArray (0,15)) testFloor)
+
+
 
 (!!) arr (x,y) = (arr ! y) ! x 
 arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
@@ -227,7 +248,7 @@ renderView :: Array2D Int32 Int32
               -> Int32 
               -> Float 
               -> Surface 
-              -> Surface -> IO ()
+              -> [Surface] -> IO ()
 renderView world px py angle surf tex =  
     mapM_ (renderCol surf tex) distCol 
   where 
@@ -260,7 +281,7 @@ renderCol surf tex ((dist,i,x),c) =
               (fromIntegral x) 
               0 
               (fromIntegral textureHeight) 
-              tex 
+              (tex P.!! (fromIntegral i - 1))
               (min 1.0 (lightRadius/dist)) 
 
   where 
@@ -271,20 +292,20 @@ renderCol surf tex ((dist,i,x),c) =
 ----------------------------------------------------------------------------      
 -- Cast for floors 
              
-floorCast :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 ->  Surface -> Surface -> IO ()              
-floorCast world angle px py texture surf = 
-    sequence_ [floorCastColumn world angle px py texture surf col
+floorCast :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 ->  Surface -> [Surface] -> IO ()              
+floorCast world angle px py surf texture = 
+    sequence_ [floorCastColumn world angle px py surf texture col
                | col <- [0..windowWidth-1]]
       
 -- Approach to try next is to draw line by line  
 -- This draws column by column
 --  + a Hack to draw ceilings as well. 
 -- TODO: Right now this completely ignores the map passed in
-floorCastColumn :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 -> Surface -> Surface -> Int32 -> IO ()
-floorCastColumn world angle px py tex surf col = 
+floorCastColumn :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 -> Surface -> [Surface] -> Int32 -> IO ()
+floorCastColumn world angle px py surf tex col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
-    texels <- castPtr `fmap` surfaceGetPixels tex
+    texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex -- (tex P.!! 0)
        
     sequence_ [renderPoint texels pixels r col xyd  
                | (r,xyd)<- zip rows ps]  
@@ -294,19 +315,23 @@ floorCastColumn world angle px py tex surf col =
     rows = [viewportCenterY..windowHeight-1]              
 
 
-    ps = [(fromIntegral px  + distance * cos radians 
-           ,fromIntegral py +  distance * sin radians,distance )
+    ps = [(fromIntegral px + distance * cos radians 
+          ,fromIntegral py + distance * sin radians,distance )
          | r <- rows
          , let distance = rowDistance r] 
          
-    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY)
-    rowDistance row = (ratioHeightRow row * fromIntegral viewDistance) / cos columnAngle     
+    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (if row - viewportCenterY  == 0 then 1 else row - viewportCenterY) -- fromIntegral (row - viewportCenterY)
+    
+    rowDistance row = (ratioHeightRow row * fromIntegral viewDistance) / cos columnAngle
          
-    renderPoint :: Ptr Word32 -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
+    renderPoint :: [Ptr Word32] -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
     renderPoint tex surf row col (x,y,dist) = 
       do 
         -- Read one Word32 instead of 4 word8
-        p  <- peekElemOff tex (fromIntegral t) 
+        -- why does this produce visibly ok results with "mod 16" ?? 
+        let (tx,ty) = ((floori_ x) `div` wallWidth `mod` 16, (floori_ y) `div` wallWidth `mod` 16) 
+        --putStrLn$ show (tx,ty)
+        p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
         
         let i = (min 1.0 (lightRadius/dist)) 
         let p0  = p .&. 255 
@@ -327,7 +352,7 @@ floorCastColumn world angle px py tex surf col =
           t  = ((floori_ y .&. modMask) * textureWidth + (floori_ x .&. modMask))
           r  = (row * windowWidth + col)
           r2 = ((windowHeight-row) * windowWidth + col )
-          
+          scale = 16
 
 ----------------------------------------------------------------------------
 -- Main !
@@ -345,27 +370,38 @@ main = do
   
   let pf = surfaceGetPixelFormat screen
       
-  testTexture' <- loadBMP "Data/textureLarge1.bmp" 
-  testTexture <- convertSurface testTexture' pf [] 
-  floorTex'   <- loadBMP "Data/floor1.bmp"            
-  floorTex    <- convertSurface floorTex' pf [] 
+  --testTexture' <- loadBMP "Data/textureLarge1.bmp" 
+  --testTexture <- convertSurface testTexture' pf [] 
+  --floorTex'   <- loadBMP "Data/floor1.bmp"            
+  --floorTex    <- convertSurface floorTex' pf [] 
                  
+  wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "Data/textureLarge2.bmp"]
                  
-  eventLoop screen testTexture floorTex
+  floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
+                            ,conv pf =<< loadBMP "Data/floor2.bmp"
+                            ,conv pf =<< loadBMP "Data/floor3.bmp"
+                            ,conv pf =<< loadBMP "Data/floor4.bmp" ]
+
+
+                 
+  eventLoop screen floorTextures wallTextures -- testTexture floorTex
     (False,False,False,False) -- Keyboard state
     (0.0,7*wallWidth ,7*wallWidth)
   
   quit
+    where 
+      conv pf t = convertSurface t pf []
   
 ----------------------------------------------------------------------------
 -- process events and draw graphics 
 eventLoop :: Surface 
-             -> Surface 
-             -> Surface 
+             -> [Surface] 
+             -> [Surface] 
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Int32, Int32) 
              -> IO ()
-eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do 
+eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
       
@@ -378,8 +414,8 @@ eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do
   -- fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
   -- draw all the visible walls
-  floorCast  testLevelArr r x y fltex screen
-  renderView testLevelArr x y r screen texture
+  floorCast  testLevelFloorArr r x y screen floorTextures
+  renderView testLevelArr x y r screen wallTextures
   -- TODO: order of arguments is messed up!
   
   SDL.flip screen
@@ -410,7 +446,7 @@ eventLoop screen texture fltex (up,down,left,right) (r,x,y) = do
   
   let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
 
-  unless b $ eventLoop screen texture fltex (up',down',left',right') (r',x',y')     
+  unless b $ eventLoop screen floorTextures wallTextures (up',down',left',right') (r',x',y')     
   
   
   -- very crude colision against walls added
