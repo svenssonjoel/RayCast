@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -fspec-constr-count=16  #-}
-
 {- 
   RayCasting (Like in the old Wolfenstein 3d game)  
 
@@ -147,8 +145,8 @@ castRay2 world accDist ray =
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
-    x_intersect = intersectX ray x_line 
-    y_intersect = intersectY ray y_line
+    x_intersect = intersect ray x_line 
+    y_intersect = intersect ray y_line
     
     ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
@@ -194,7 +192,7 @@ distance (x1, y1) (x2, y2) =
       xd = fromIntegral (x2 - x1)
       yd = fromIntegral (y2 - y1)
 
-
+{- 
 intersectX :: Ray -> Line -> Maybe Vector2D 
 intersectX (Ray r1 d1) (Line p1 p2) =  Just (fst p1,snd r1 + floori_ ysect  )	
   where	
@@ -212,10 +210,9 @@ intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )
     ratio'  = fromIntegral (fst d1) / divisor 
     ratio   = if ratio' == 0.0 then 0.0001 else ratio'
     xsect   = fromIntegral d * ratio
+-} 
 
 
-
-{- 
 -- Intersection between ray and line. 
 -- TODO: should there be a case for coincident ray/line 
 intersect :: Ray -> Line -> Maybe Vector2D 
@@ -244,7 +241,6 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
     b = x1 - x2
     c = a*x1+b*y1 
 
--}
 ----------------------------------------------------------------------------
 -- rendering routines 
 renderView :: Array2D Int32 Int32 
