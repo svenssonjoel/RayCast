@@ -181,7 +181,7 @@ type Point2D  = (Int32,Int32)
 data Ray     = Ray  Point2D Vector2D -- Point direction representation    
 
 mkRay :: Point2D -> Float -> Ray 
-mkRay p r    = Ray p (floori_ (1024.0*cos r), floori_ (1024.0*sin r))  
+mkRay p r    = Ray p (floori_ (-1024.0*sin r), floori_ (1024.0*cos r))  
 
 data Line    = Line Point2D Point2D -- two points on the line  
 
@@ -305,32 +305,36 @@ floorCastColumn :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 -> Surface -> 
 floorCastColumn world angle px py surf tex col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
-    texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex -- (tex P.!! 0)
+    texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex
        
     sequence_ [renderPoint texels pixels r col xyd  
                | (r,xyd)<- zip rows ps]  
   where 
     radians = angle + columnAngle
     columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
-    rows = [viewportCenterY..windowHeight-1]              
+    rows = [viewportCenterY+40..windowHeight-1]              
 
 
-    ps = [(fromIntegral px + distance * cos radians 
-          ,fromIntegral py + distance * sin radians,distance )
+    ps = [(fromIntegral px - distance * sin radians 
+          ,fromIntegral py + distance * cos radians,distance )
          | r <- rows
          , let distance = rowDistance r] 
-         
-    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (if row - viewportCenterY  == 0 then 1 else row - viewportCenterY) -- fromIntegral (row - viewportCenterY)
     
-    rowDistance row = (ratioHeightRow row * fromIntegral viewDistance) / cos columnAngle
+    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY) 
+                         
+    
+    rowDistance row = ratioHeightRow row * fromIntegral viewDistance / cos columnAngle
          
     renderPoint :: [Ptr Word32] -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
     renderPoint tex surf row col (x,y,dist) = 
       do 
         -- Read one Word32 instead of 4 word8
         -- why does this produce visibly ok results with "mod 16" ?? 
-        let (tx,ty) = ((floori_ x) `div` wallWidth `mod` 16, (floori_ y) `div` wallWidth `mod` 16) 
-        --putStrLn$ show (tx,ty)
+        -- The mod 16 kicks in when floor outside of the map is being "cast"
+        let (tx,ty) = (floori_ x `div` wallWidth `mod` 16, floori_ y `div` wallWidth `mod` 16) 
+        
+        
+        
         p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
         
         let i = (min 1.0 (lightRadius/dist)) 
@@ -341,12 +345,11 @@ floorCastColumn world angle px py surf tex col =
             p0' =  floor_ $ i * (fromIntegral p0) 
             p1' =  floor_ $ i * (fromIntegral p1) 
             p2' =  floor_ $ i * (fromIntegral p2) 
-                        
+                                
             p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
         
         pokeElemOff surf (fromIntegral r)  p'     -- floor... 
         pokeElemOff surf (fromIntegral r2) p'     -- ceiling...   
-       
         
         where 
           t  = ((floori_ y .&. modMask) * textureWidth + (floori_ x .&. modMask))
@@ -455,10 +458,10 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
     moveRight b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x + (floori_ ((fromIntegral walkSpeed)*cos r))
-        y' = y + (floori_ ((fromIntegral walkSpeed)*sin r))
+        x' = x - (floori_ ((fromIntegral walkSpeed)*sin r))
+        y' = y + (floori_ ((fromIntegral walkSpeed)*cos r))
     moveDown  b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
-        x' = x - (floori_ ((fromIntegral walkSpeed)*cos r))
-        y' = y - (floori_ ((fromIntegral walkSpeed)*sin r))
+        x' = x + (floori_ ((fromIntegral walkSpeed)*sin r))
+        y' = y - (floori_ ((fromIntegral walkSpeed)*cos r))
     movementAllowed (px,py) = testLevelArr !! (px `div` wallWidth,py `div` wallWidth) == 0
