@@ -292,8 +292,8 @@ renderCol surf tex ((dist,i,x),c) =
 ----------------------------------------------------------------------------      
 -- Cast for floors 
              
-floorCast :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 ->  Surface -> [Surface] -> IO ()              
-floorCast world angle px py surf texture = 
+floorCast :: Array2D Int32 Int32 -> Int32 -> Int32 -> Float -> Surface -> [Surface] -> IO ()              
+floorCast world px py angle surf texture = 
     sequence_ [floorCastColumn world angle px py surf texture col
                | col <- [0..windowWidth-1]]
       
@@ -301,8 +301,8 @@ floorCast world angle px py surf texture =
 -- This draws column by column
 --  + a Hack to draw ceilings as well. 
 -- TODO: Right now this completely ignores the map passed in
-floorCastColumn :: Array2D Int32 Int32 -> Float -> Int32 -> Int32 -> Surface -> [Surface] -> Int32 -> IO ()
-floorCastColumn world angle px py surf tex col = 
+floorCastColumn :: Array2D Int32 Int32 -> Int32 -> Int32 -> Float -> Surface -> [Surface] -> Int32 -> IO ()
+floorCastColumn world px py angle surf tex col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
     texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex
@@ -312,7 +312,7 @@ floorCastColumn world angle px py surf tex col =
   where 
     radians = angle + columnAngle
     columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
-    rows = [viewportCenterY+40..windowHeight-1]              
+    rows = [viewportCenterY+1..windowHeight-1]              
 
 
     ps = [(fromIntegral px - distance * sin radians 
@@ -417,7 +417,7 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
   -- fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
   -- draw all the visible walls
-  floorCast  testLevelFloorArr r x y screen floorTextures
+  floorCast  testLevelFloorArr x y r screen floorTextures
   renderView testLevelArr x y r screen wallTextures
   -- TODO: order of arguments is messed up!
   
