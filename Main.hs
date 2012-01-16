@@ -294,7 +294,7 @@ renderCol surf tex ((dist,i,x),c) =
              
 floorCast :: Array2D Int32 Int32 -> Int32 -> Int32 -> Float -> Surface -> [Surface] -> IO ()              
 floorCast world px py angle surf texture = 
-    sequence_ [floorCastColumn world angle px py surf texture col
+    sequence_ [floorCastColumn world px py angle surf texture col
                | col <- [0..windowWidth-1]]
       
 -- Approach to try next is to draw line by line  
@@ -407,19 +407,10 @@ eventLoop :: Surface
 eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
-      
-  floor <- mapRGB pf 8 8 8     -- color of floors
-  ceil  <- mapRGB pf 4 4 5  -- color of ceilings 
-  
- 
-  -- draw single colored floor and ceilings (here use 320 for widht, inconsistent?)
-  -- fillRect screen (Just (Rect 0 0 windowWidth (windowHeight `div` 2))) ceil    
-  -- fillRect screen (Just (Rect 0 (windowHeight `div` 2) windowWidth windowHeight)) floor
   
   -- draw all the visible walls
   floorCast  testLevelFloorArr x y r screen floorTextures
   renderView testLevelArr x y r screen wallTextures
-  -- TODO: order of arguments is messed up!
   
   SDL.flip screen
   
