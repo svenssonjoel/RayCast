@@ -384,8 +384,6 @@ newFloorCastColumn world (px,py) angle slices tex surf col =
         -- Now the mod is not needed.
         let (tx,ty) = (floori_ x `div` wallWidth, floori_ y `div` wallWidth) 
         
-        
-        
         p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
         
         let i = (min 1.0 (lightRadius/dist)) 
