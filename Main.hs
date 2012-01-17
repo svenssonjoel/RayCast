@@ -117,10 +117,36 @@ viewportCenterX = windowWidth `div` 2
 windowWidth     = 800  -- number of rays ! 
 windowHeight    = 600
 
+----------------------------------------------------------------------------
+-- Slice
 
+data Slice = Slice {sliceTop :: Int32,
+                    sliceBot :: Int32, 
+                    sliceTex :: Int32,
+                    sliceTexCol :: Int32,
+                    sliceIntensity :: Float}
+
+type Angle = Float 
 
 ---------------------------------------------------------------------------- 
--- castRay2 
+-- castRay
+castRay :: Array2D Int32 Int32 -> Point2D -> Angle -> Int32 -> Slice 
+castRay world pos angle column = Slice top bot texValue texCol (min 1.0 (lightRadius/dist))  
+  where 
+    ray  = mkRay pos (angle + columnAngle)
+    columnAngle = atan $ fromIntegral col / fromIntegral viewDistance
+    top  = bot - height 
+    bot  = floori_ $ fromIntegral viewportCenterY + (fromIntegral height / 2) 
+    height = floori_ $ fromIntegral (viewDistance * wallHeight) / dist
+    dist = dist' * cos columnAngle
+    col = column - viewportCenterX
+    (dist', texValue, texCol) = castRay2 world 0.0 ray 
+ 
+   
+
+
+----------------------------------------------------------------------------
+-- castRay2
 castRay2 :: Array2D Int32 Int32 -> Float -> Ray  -> (Float,Int32,Int32)
 castRay2 world accDist ray = 
     if (value > 0) -- ray has struck solid wall
@@ -243,6 +269,27 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
 
 ----------------------------------------------------------------------------
 -- rendering routines 
+    
+-- renderWalls, to replace renderView
+renderWalls :: Array2D Int32 Int32 -> Point2D -> Angle -> [Surface] -> Surface -> IO ()
+renderWalls world pos angle textures surf = 
+  zipWithM_ (drawSlice textures surf) [0..windowWidth-1] slices 
+  where 
+    slices = map (castRay world pos angle)  [0..windowWidth-1]
+    
+drawSlice :: [Surface] -> Surface -> Int32 -> Slice -> IO () 
+drawSlice textures surf col slice = 
+  texVLineLit (fromIntegral col) 
+              (fromIntegral (sliceTop slice)) 
+              (fromIntegral (sliceBot slice)) 
+              surf 
+              (fromIntegral (sliceTexCol slice))
+              0 
+              (fromIntegral textureHeight) 
+              (textures  P.!! (fromIntegral (sliceTex slice - 1)))
+              (sliceIntensity slice) 
+  
+    
 renderView :: Array2D Int32 Int32 
               -> Int32 
               -> Int32 
@@ -285,7 +332,7 @@ renderCol surf tex ((dist,i,x),c) =
               (min 1.0 (lightRadius/dist)) 
 
   where 
-    height = floori_ (fromIntegral (viewDistance * wallHeight) / (max dist 4) )
+    height = floori_ (fromIntegral (viewDistance * wallHeight) / dist)
     starty = endy - height 
     endy   = floori_ (fromIntegral viewportCenterY + ((fromIntegral height) / 2)) --floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
      
@@ -410,7 +457,9 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
   
   -- draw all the visible walls
   floorCast  testLevelFloorArr x y r screen floorTextures
-  renderView testLevelArr x y r screen wallTextures
+  
+  renderWalls testLevelArr (x,y) r wallTextures screen
+  --renderView testLevelArr x y r screen wallTextures
   
   SDL.flip screen
   
