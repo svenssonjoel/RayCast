@@ -360,7 +360,7 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
     columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
     
     -- only check floor where there are no walls (optimisation) 
-    rows = [sliceBot slice + 1..windowHeight-1]
+    rows = [sliceBot slice..windowHeight-1]
     -- rows = [viewportCenterY+1..windowHeight-1]              
 
 
