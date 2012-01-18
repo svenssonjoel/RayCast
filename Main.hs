@@ -345,11 +345,10 @@ renderCol surf tex ((dist,i,x),c) =
 -- The slices are just there to be able to make some optimisations.              
 newFloorCast :: MapType -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
 newFloorCast world pos angle slices textures surf =              
-  sequence_ [newFloorCastColumn world pos angle slices textures surf col
-             | col <- [0..windowWidth-1]]
+  zipWithM_ (newFloorCastColumn world pos angle textures surf) slices [0..windowWidth-1]
              
-newFloorCastColumn :: MapType -> Point2D -> Float -> [Slice] -> [Surface] -> Surface -> Int32 -> IO ()
-newFloorCastColumn world (px,py) angle slices tex surf col = 
+newFloorCastColumn :: MapType -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
+newFloorCastColumn world (px,py) angle tex surf slice col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
     texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex
@@ -361,7 +360,7 @@ newFloorCastColumn world (px,py) angle slices tex surf col =
     columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
     
     -- only check floor where there are no walls (optimisation) 
-    rows = [sliceBot (slices P.!! (fromIntegral col))+1..windowHeight-1]
+    rows = [sliceBot slice + 1..windowHeight-1]
     -- rows = [viewportCenterY+1..windowHeight-1]              
 
 
