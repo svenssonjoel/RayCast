@@ -119,7 +119,7 @@ windowWidth     = 800  -- number of rays !
 windowHeight    = 600
 
 ----------------------------------------------------------------------------
--- Slice
+-- Slice : One slice of wall
 
 data Slice = Slice {sliceTop :: Int32,
                     sliceBot :: Int32, 
@@ -341,7 +341,6 @@ renderCol surf tex ((dist,i,x),c) =
      
 ----------------------------------------------------------------------------      
 -- Cast for floors 
-             
 -- The slices are just there to be able to make some optimisations.              
 newFloorCast :: MapType -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
 newFloorCast world pos angle slices textures surf =              
@@ -351,8 +350,8 @@ newFloorCastColumn :: MapType -> Point2D -> Float -> [Surface] -> Surface -> Sli
 newFloorCastColumn world (px,py) angle tex surf slice col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
-    texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex
-       
+    texels <- mapM ((return . castPtr) <=< surfaceGetPixels) tex
+
     sequence_ [renderPoint texels pixels r col xyd  
                | (r,xyd)<- zip rows ps]  
   where 
@@ -377,10 +376,6 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
     renderPoint :: [Ptr Word32] -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
     renderPoint tex surf row col (x,y,dist) = 
       do 
-        -- Read one Word32 instead of 4 word8
-        -- why does this produce visibly ok results with "mod 16" ?? 
-        -- The mod 16 kicks in when floor outside of the map is being "cast"
-        -- Now the mod is not needed.
         let (tx,ty) = (floori_ x `div` wallWidth, floori_ y `div` wallWidth) 
         
         p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
@@ -528,7 +523,7 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
   
   slices <- renderWalls testLevelArr (x,y) r wallTextures screen
   newFloorCast testLevelFloorArr (x,y) r slices floorTextures screen
-  --renderView testLevelArr x y r screen wallTextures
+  
   
   SDL.flip screen
   
