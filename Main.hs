@@ -134,7 +134,7 @@ type Angle = Float
 castRay :: Array2D Int32 Int32 -> Point2D -> Angle -> Int32 -> Slice 
 castRay world pos angle column = Slice top bot texValue texCol (min 1.0 (lightRadius/dist))  
   where 
-    ray  = mkRay pos (angle + columnAngle)
+    ray  = mkRay pos (angle - columnAngle)
     columnAngle = atan $ fromIntegral col / fromIntegral viewDistance
     top  = bot - height 
     bot  = floori_ $ fromIntegral viewportCenterY + (fromIntegral height / 2) 
@@ -355,7 +355,7 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
     sequence_ [renderPoint texels pixels r col xyd  
                | (r,xyd)<- zip rows ps]  
   where 
-    radians = angle + columnAngle
+    radians = angle - columnAngle
     columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
     
     -- only check floor where there are no walls (optimisation) 
@@ -558,8 +558,8 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
   
   -- very crude colision against walls added
   where 
-    moveLeft  b (r,x,y) = if b then (r-0.04,x,y) else (r,x,y) 
-    moveRight b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
+    moveLeft  b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = if b then (r-0.04,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
         x' = x - (floori_ ((fromIntegral walkSpeed)*sin r))
