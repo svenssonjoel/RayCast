@@ -144,6 +144,7 @@ castRay world pos angle column = Slice top bot texValue texCol (min 1.0 (lightRa
     (dist', texValue, texCol) = castRay2 world 0.0 ray 
  
    
+    
 
 
 ----------------------------------------------------------------------------
@@ -397,7 +398,7 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
         where 
           t  = ((floori_ y .&. modMask) * textureWidth + (floori_ x .&. modMask))
           r  = (row * windowWidth + col)
-          r2 = ((windowHeight-row) * windowWidth + col )
+          r2 = ((windowHeight-row-1) * windowWidth + col )
     
   
   
