@@ -23,7 +23,9 @@ import Prelude hiding ((!!))
 import qualified Prelude as P
 import Graphics.UI.SDL as SDL
 
-
+import Engine.RayCast
+import Engine.Math
+import Engine.Map
 
 import Control.Monad
 import Data.Array
@@ -79,8 +81,8 @@ testFloor = [[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
              [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
              [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3]]
 
-type MapType = Array2D Int32 Int32
-type Array2D i e = Array i (Array i e)
+-- type MapType = Array2D Int32 Int32
+-- type Array2D i e = Array i (Array i e)
 
 testLevelArr :: Array2D Int32 Int32 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
@@ -89,13 +91,13 @@ testLevelFloorArr = listArray (0,15) (map (listArray (0,15)) testFloor)
 
 
 
-(!!) arr (x,y) = (arr ! y) ! x 
-arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
+-- (!!) arr (x,y) = (arr ! y) ! x 
+-- arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
 
 ----------------------------------------------------------------------------
 -- some constants
+{- 
 viewDistance   = floori_ (fromIntegral windowWidth * 0.6) -- 192 at 320  
-walkSpeed      = wallWidth `div` 8
 
 lightRadius    = 128.0
 
@@ -105,22 +107,24 @@ wallHeight      = 256
 wallWidth       = 256
 gridMask        = negate (wallWidth - 1) -- used to find gridlines
 modMask         = 255                    -- used to get value `mod` 256 by an and operation
+-} 
+walkSpeed      = 32 
 
 textureWidth, textureHeight :: Int32 
 textureWidth    = 256 
 textureHeight   = 256
 
-
+{-
 viewerHeight    = wallHeight `div` 2
 viewportCenterY = windowHeight `div` 2
 viewportCenterX = windowWidth `div` 2
 
-windowWidth     = 800  -- number of rays ! 
+windowWidth     = 800  -- number of rays !  
 windowHeight    = 600
-
+-}
 ----------------------------------------------------------------------------
 -- Slice : One slice of wall
-
+{- 
 data Slice = Slice {sliceTop :: Int32,
                     sliceBot :: Int32, 
                     sliceTex :: Int32,
@@ -128,9 +132,10 @@ data Slice = Slice {sliceTop :: Int32,
                     sliceIntensity :: Float}
 
 type Angle = Float 
-
+-} 
 ---------------------------------------------------------------------------- 
 -- castRay
+{- 
 castRay :: Array2D Int32 Int32 -> Point2D -> Angle -> Int32 -> Slice 
 castRay world pos angle column = Slice top bot texValue texCol (min 1.0 (lightRadius/dist))  
   where 
@@ -143,12 +148,13 @@ castRay world pos angle column = Slice top bot texValue texCol (min 1.0 (lightRa
     col = column - viewportCenterX
     (dist', texValue, texCol) = castRay2 world 0.0 ray 
  
-   
+-}    
     
 
 
 ----------------------------------------------------------------------------
 -- castRay2
+{- 
 castRay2 :: Array2D Int32 Int32 -> Float -> Ray  -> (Float,Int32,Int32)
 castRay2 world accDist ray = 
     if (value > 0) -- ray has struck solid wall
@@ -200,9 +206,10 @@ rayDx     (Ray _ (dx,_)) = dx
 rayDy     (Ray _ (_,dy)) = dy 
 rayStart  (Ray s _) = s 
 rayDeltas (Ray _ d) = d 
-
+-} 
 ---------------------------------------------------------------------------- 
 -- 
+{- 
 type Vector2D = (Int32,Int32) 
 type Point2D  = (Int32,Int32)
 
@@ -220,6 +227,7 @@ distance (x1, y1) (x2, y2) =
       xd = fromIntegral (x2 - x1)
       yd = fromIntegral (y2 - y1)
 
+-} 
 {- 
 intersectX :: Ray -> Line -> Maybe Vector2D 
 intersectX (Ray r1 d1) (Line p1 p2) =  Just (fst p1,snd r1 + floori_ ysect  )	
@@ -243,6 +251,7 @@ intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )
 
 -- Intersection between ray and line. 
 -- TODO: should there be a case for coincident ray/line 
+{- 
 intersect :: Ray -> Line -> Maybe Vector2D 
 intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
                                      then Nothing 
@@ -268,18 +277,18 @@ convertLine (x1,y1) (x2,y2) = (a,b,c)
     a = y2 - y1 
     b = x1 - x2
     c = a*x1+b*y1 
-
+-} 
 ----------------------------------------------------------------------------
 -- rendering routines 
     
 -- renderWalls, to replace renderView
-renderWalls :: Array2D Int32 Int32 -> Point2D -> Angle -> [Surface] -> Surface -> IO [Slice]
-renderWalls world pos angle textures surf = 
+renderWalls :: ViewConfig -> Array2D Int32 Int32 -> View -> [Surface] -> Surface -> IO [Slice]
+renderWalls vc world (pos,angle) textures surf = 
   do 
-    zipWithM_ (drawSlice textures surf) [0..windowWidth-1] slices 
+    zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
     return slices
   where 
-    slices = map (castRay world pos angle)  [0..windowWidth-1]
+    slices = map (castRay vc world (pos,angle))  [0..vcWindowWidth vc-1]
     
 drawSlice :: [Surface] -> Surface -> Int32 -> Slice -> IO () 
 drawSlice textures surf col slice = 
@@ -294,14 +303,13 @@ drawSlice textures surf col slice =
               (sliceIntensity slice) 
   
     
-renderView :: Array2D Int32 Int32 
-              -> Int32 
-              -> Int32 
-              -> Float 
+renderView :: ViewConfig -> 
+              Array2D Int32 Int32 
+              -> View  
               -> Surface 
               -> [Surface] -> IO ()
-renderView world px py angle surf tex =  
-    mapM_ (renderCol surf tex) distCol 
+renderView vc world ((px,py), angle) surf tex =  
+    mapM_ (renderCol vc surf tex) distCol 
   where 
     dists'   =  results -- map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
     
@@ -309,18 +317,18 @@ renderView world px py angle surf tex =
     dists    = zipWith (\(dist,i,x) r -> (dist*cos(r),i,x)) dists' colAngles 
     distCol = zip dists [0..] 
     colAngles = [atan ((fromIntegral c) / 
-                       (fromIntegral viewDistance)) 
-                | col <- [0..windowWidth-1], let c = col-viewportCenterX
+                       (fromIntegral (vcViewDistance vc))) 
+                | col <- [0..vcWindowWidth vc - 1], let c = col - viewportCenterX vc
                 ] 
     
     rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
     
-    results = map (castRay2 world 0.0) rays 
+    results = map (castRay2 vc world 0.0) rays 
 
 
     
 -- draw a single column into surf
-renderCol surf tex ((dist,i,x),c) = 
+renderCol vc surf tex ((dist,i,x),c) = 
   -- vertLine c starty endy color surf
   -- texturedVLine c starty endy surf  x 0 64 tex
   -- texVLine c starty endy surf x 0 textureHeight tex
@@ -333,13 +341,15 @@ renderCol surf tex ((dist,i,x),c) =
               0 
               (fromIntegral textureHeight) 
               (tex P.!! (fromIntegral i - 1))
-              (min 1.0 (lightRadius/dist)) 
+              (min 1.0 (128{-lightRadius-}/dist)) 
 
   where 
-    height = floori_ (fromIntegral (viewDistance * wallHeight) / dist)
+    height = floori_ (fromIntegral (vcViewDistance vc* wallHeight vc) / dist)
     starty = endy - height 
-    endy   = floori_ (fromIntegral viewportCenterY + ((fromIntegral height) / 2)) --floor (fromIntegral (viewDistance * viewerHeight) / dist + fromIntegral viewportCenterY) 
+    endy   = floori_ (fromIntegral (viewportCenterY vc) + ((fromIntegral height) / 2))
      
+    
+{-     
 ----------------------------------------------------------------------------      
 -- Cast for floors 
 -- The slices are just there to be able to make some optimisations.              
@@ -467,14 +477,19 @@ floorCastColumn world px py angle surf tex col =
           r  = (row * windowWidth + col)
           r2 = ((windowHeight-row) * windowWidth + col )
     
-
+-} 
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
   SDL.init [InitEverything] 
   
-  setVideoMode (fromIntegral windowWidth) 
-               (fromIntegral windowHeight) 32 []
+    
+  let vc = mkViewConfig (floori_ (800.0*0.6))   
+                        800 
+                        600 
+                        (256,256) 
+    
+  setVideoMode 800 600 32 []
 
   
   screen <- getVideoSurface
@@ -499,9 +514,9 @@ main = do
 
 
                  
-  eventLoop screen floorTextures wallTextures -- testTexture floorTex
+  eventLoop vc screen floorTextures wallTextures -- testTexture floorTex
     (False,False,False,False) -- Keyboard state
-    (0.0,7*wallWidth ,7*wallWidth)
+    (0.0,7*wallWidth vc ,7*wallWidth vc)
   
   quit
     where 
@@ -509,21 +524,26 @@ main = do
   
 ----------------------------------------------------------------------------
 -- process events and draw graphics 
-eventLoop :: Surface 
+eventLoop :: ViewConfig 
+             -> Surface 
              -> [Surface] 
              -> [Surface] 
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Int32, Int32) 
              -> IO ()
-eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do 
+eventLoop vc screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do 
   
   let pf = surfaceGetPixelFormat screen
   
   -- draw all the visible walls
   -- floorCast  testLevelFloorArr x y r screen floorTextures
   
-  slices <- renderWalls testLevelArr (x,y) r wallTextures screen
-  newFloorCast testLevelFloorArr (x,y) r slices floorTextures screen
+  fillRect screen 
+           (Just (Rect 0 0 800 600)) 
+           =<< mapRGB pf 16 16 16 
+  
+  slices <- renderWalls vc testLevelArr ((x,y),r) wallTextures screen
+  -- newFloorCast testLevelFloorArr (x,y) r slices floorTextures screen
   
   
   SDL.flip screen
@@ -554,7 +574,7 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
   
   let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
 
-  unless b $ eventLoop screen floorTextures wallTextures (up',down',left',right') (r',x',y')     
+  unless b $ eventLoop vc screen floorTextures wallTextures (up',down',left',right') (r',x',y')     
   
   
   -- very crude colision against walls added
@@ -569,4 +589,4 @@ eventLoop screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
       where 
         x' = x + (floori_ ((fromIntegral walkSpeed)*sin r))
         y' = y - (floori_ ((fromIntegral walkSpeed)*cos r))
-    movementAllowed (px,py) = testLevelArr !! (px `div` wallWidth,py `div` wallWidth) == 0
+    movementAllowed (px,py) = testLevelArr !! (px `div` wallWidth vc,py `div` wallWidth vc) == 0

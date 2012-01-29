@@ -1,10 +1,12 @@
 
-
+ENGINEFILES = ./Engine/Math.hs \
+              ./Engine/Map.hs \
+              ./Engine/RayCast.hs
 
 all: main
 
 
-main: Main.hs SDLUtils.hs CExtras.hs MathExtras.hs cExtras.c		
+main: Main.hs SDLUtils.hs CExtras.hs MathExtras.hs cExtras.c $(ENGINEFILES) 		
 	ghc Main.hs cExtras.c -o main -O3  -lm
 
 CExtras.hs: CExtras.chs 
