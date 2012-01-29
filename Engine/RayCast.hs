@@ -7,7 +7,7 @@ import Data.Bits
 import Engine.Math
 import Engine.Map
 
-import MathExtras  
+import MathExtras  §
 
 import Prelude hiding ((!!)) 
 
