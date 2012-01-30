@@ -1,9 +1,12 @@
 {- 
+  2012 Joel Svensson   
+
+
   RayCasting (Like in the old Wolfenstein 3d game)  
 
   This is an attempt to Haskellify the code from 
-  Christopher Lamptons Book "Gardens of Imagination" 
- 
+  Christopher Lamptons Book "Gardens of Imagination"  
+
   **************************************
   This is also an exercise in using SDL. 
   
@@ -26,6 +29,7 @@ import Graphics.UI.SDL as SDL
 import Engine.RayCast
 import Engine.Math
 import Engine.Map
+import Engine.Render
 
 import Control.Monad
 import Data.Array
@@ -81,274 +85,23 @@ testFloor = [[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
              [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
              [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3]]
 
--- type MapType = Array2D Int32 Int32
--- type Array2D i e = Array i (Array i e)
-
 testLevelArr :: Array2D Int32 Int32 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
 testLevelFloorArr :: Array2D Int32 Int32 
 testLevelFloorArr = listArray (0,15) (map (listArray (0,15)) testFloor)
 
 
-
--- (!!) arr (x,y) = (arr ! y) ! x 
--- arr2dStr arr = unlines (map concat [[show ((arr ! y) ! x)| x <- [0..15]]| y <- [0..15]]) 
-
 ----------------------------------------------------------------------------
--- some constants
-{- 
-viewDistance   = floori_ (fromIntegral windowWidth * 0.6) -- 192 at 320  
+-- Constants 
 
-lightRadius    = 128.0
-
-
-wallHeight, wallWidth :: Int32 
-wallHeight      = 256
-wallWidth       = 256
-gridMask        = negate (wallWidth - 1) -- used to find gridlines
-modMask         = 255                    -- used to get value `mod` 256 by an and operation
--} 
 walkSpeed      = 32 
 
+-- This should be part of the "rendering settings"
+-- or attached to texture objects somehow. 
 textureWidth, textureHeight :: Int32 
 textureWidth    = 256 
 textureHeight   = 256
 
-{-
-viewerHeight    = wallHeight `div` 2
-viewportCenterY = windowHeight `div` 2
-viewportCenterX = windowWidth `div` 2
-
-windowWidth     = 800  -- number of rays !  
-windowHeight    = 600
--}
-----------------------------------------------------------------------------
--- Slice : One slice of wall
-{- 
-data Slice = Slice {sliceTop :: Int32,
-                    sliceBot :: Int32, 
-                    sliceTex :: Int32,
-                    sliceTexCol :: Int32,
-                    sliceIntensity :: Float}
-
-type Angle = Float 
--} 
----------------------------------------------------------------------------- 
--- castRay
-{- 
-castRay :: Array2D Int32 Int32 -> Point2D -> Angle -> Int32 -> Slice 
-castRay world pos angle column = Slice top bot texValue texCol (min 1.0 (lightRadius/dist))  
-  where 
-    ray  = mkRay pos (angle - columnAngle)
-    columnAngle = atan $ fromIntegral col / fromIntegral viewDistance
-    top  = bot - height 
-    bot  = floori_ $ fromIntegral viewportCenterY + (fromIntegral height / 2) 
-    height = floori_ $ fromIntegral (viewDistance * wallHeight) / dist
-    dist = dist' * cos columnAngle
-    col = column - viewportCenterX
-    (dist', texValue, texCol) = castRay2 world 0.0 ray 
- 
--}    
-    
-
-
-----------------------------------------------------------------------------
--- castRay2
-{- 
-castRay2 :: Array2D Int32 Int32 -> Float -> Ray  -> (Float,Int32,Int32)
-castRay2 world accDist ray = 
-    if (value > 0) -- ray has struck solid wall
-    then (accDist+dist,value,offs) 
-    else 
-      -- Continue along the ray 
-      castRay2 world (accDist+dist) (Ray (px ,py) (rayDeltas ray))
-
-        
-  where 
-    grid_x = if (posRayDx ray) 
-             then (rayX ray .&. gridMask) + wallWidth
-             else (rayX ray .&. gridMask) - 1
-    grid_y = if (posRayDy ray) 
-             then (rayY ray .&. gridMask) + wallWidth
-             else (rayY ray .&. gridMask) -1 
-                  
-    
-    -- Create two lines for intersection test
-    x_line = Line (fromIntegral grid_x,0) (fromIntegral grid_x,1) 
-    y_line = Line (0,fromIntegral grid_y) (1,fromIntegral grid_y)  
-    
-    -- intersect ray with both vertical and horizontal line
-    -- the closest one is used. 
-    x_intersect = intersect ray x_line 
-    y_intersect = intersect ray y_line
-    
-    ((px,py),dist,offs)  = 
-      case (x_intersect,y_intersect) of 
-        (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p `mod` wallWidth) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p `mod` wallWidth) ) 
-        (Just p, Just q)  -> 
-          let d1 = distance (rayStart ray) p 
-              d2 = distance (rayStart ray) q 
-          in if d1 < d2 
-             then (p,d1,(snd p `mod` wallWidth) ) 
-             else (q,d2,(fst q `mod` wallWidth) ) 
-    value = world !! (px `div` wallWidth, py `div` wallWidth)
-
-     
--- TODO: improve on these (better names)   
-    
-posRayDx  (Ray _ (dx,_)) = dx > 0   
-posRayDy  (Ray _ (_,dy)) = dy > 0 
-rayX      (Ray (x,_) _) = x
-rayY      (Ray (_,y) _) = y 
-rayDx     (Ray _ (dx,_)) = dx 
-rayDy     (Ray _ (_,dy)) = dy 
-rayStart  (Ray s _) = s 
-rayDeltas (Ray _ d) = d 
--} 
----------------------------------------------------------------------------- 
--- 
-{- 
-type Vector2D = (Int32,Int32) 
-type Point2D  = (Int32,Int32)
-
-data Ray     = Ray  Point2D Vector2D -- Point direction representation    
-
-mkRay :: Point2D -> Float -> Ray 
-mkRay p r    = Ray p (floori_ (-1024.0*sin r), floori_ (1024.0*cos r))  
-
-data Line    = Line Point2D Point2D -- two points on the line  
-
-distance :: Point2D -> Point2D -> Float
-distance (x1, y1) (x2, y2) = 
-  sqrt $ xd*xd+yd*yd
-    where 
-      xd = fromIntegral (x2 - x1)
-      yd = fromIntegral (y2 - y1)
-
--} 
-{- 
-intersectX :: Ray -> Line -> Maybe Vector2D 
-intersectX (Ray r1 d1) (Line p1 p2) =  Just (fst p1,snd r1 + floori_ ysect  )	
-  where	
-    d       = fst p1 - fst r1
-    divisor = if fst d1 == 0 then 0.0001 else fromIntegral (fst d1)
-    ratio'  = fromIntegral (snd d1) / divisor 
-    ratio   = if ratio' == 0.0 then  0.0001 else ratio'
-    ysect   = fromIntegral d * ratio
-
-intersectY :: Ray -> Line -> Maybe Vector2D 
-intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )	
-  where	
-    d       = snd p1 - snd r1
-    divisor = if snd d1 == 0 then 0.0001 else fromIntegral (snd d1)
-    ratio'  = fromIntegral (fst d1) / divisor 
-    ratio   = if ratio' == 0.0 then 0.0001 else ratio'
-    xsect   = fromIntegral d * ratio
--} 
-
-
--- Intersection between ray and line. 
--- TODO: should there be a case for coincident ray/line 
-{- 
-intersect :: Ray -> Line -> Maybe Vector2D 
-intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
-                                     then Nothing 
-                                     else (Just (x,y)) 
- where  
-   (a1,b1,c1) = convertRay p1 d1
-   (a2,b2,c2) = convertLine p2 d2 
-   det = a1*b2 - a2*b1
-   
-   x = (b2*c1 - b1*c2)  `div` det
-   y = (a1*c2 - a2*c1)  `div` det
-
---convertRay :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
-convertRay  (x, y) (dx, dy) = (a,b,c) 
-  where 
-    a = dy             -- (y+dy) - y  
-    b = -dx            -- x - (x+dx)
-    c = a*x+b*y
-   
---convertLine :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
-convertLine (x1,y1) (x2,y2) = (a,b,c) 
-  where 
-    a = y2 - y1 
-    b = x1 - x2
-    c = a*x1+b*y1 
--} 
-----------------------------------------------------------------------------
--- rendering routines 
-    
--- renderWalls, to replace renderView
-renderWalls :: ViewConfig -> Array2D Int32 Int32 -> View -> [Surface] -> Surface -> IO [Slice]
-renderWalls vc world (pos,angle) textures surf = 
-  do 
-    zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
-    return slices
-  where 
-    slices = map (castRay vc world (pos,angle))  [0..vcWindowWidth vc-1]
-    
-drawSlice :: [Surface] -> Surface -> Int32 -> Slice -> IO () 
-drawSlice textures surf col slice = 
-  texVLineLit (fromIntegral col) 
-              (fromIntegral (sliceTop slice)) 
-              (fromIntegral (sliceBot slice)) 
-              surf 
-              (fromIntegral (sliceTexCol slice))
-              0 
-              (fromIntegral textureHeight) 
-              (textures  P.!! (fromIntegral (sliceTex slice - 1)))
-              (sliceIntensity slice) 
-  
-    
-renderView :: ViewConfig -> 
-              Array2D Int32 Int32 
-              -> View  
-              -> Surface 
-              -> [Surface] -> IO ()
-renderView vc world ((px,py), angle) surf tex =  
-    mapM_ (renderCol vc surf tex) distCol 
-  where 
-    dists'   =  results -- map (\(dist,i,x) -> (if dist == 0.0 then 0.1 else dist,i,x)) results 
-    
-    -- fixes the "fish eye" phenomenom    (*cos(angle)) 
-    dists    = zipWith (\(dist,i,x) r -> (dist*cos(r),i,x)) dists' colAngles 
-    distCol = zip dists [0..] 
-    colAngles = [atan ((fromIntegral c) / 
-                       (fromIntegral (vcViewDistance vc))) 
-                | col <- [0..vcWindowWidth vc - 1], let c = col - viewportCenterX vc
-                ] 
-    
-    rays = map (\r -> mkRay (px,py) (r+angle)) colAngles
-    
-    results = map (castRay2 vc world 0.0) rays 
-
-
-    
--- draw a single column into surf
-renderCol vc surf tex ((dist,i,x),c) = 
-  -- vertLine c starty endy color surf
-  -- texturedVLine c starty endy surf  x 0 64 tex
-  -- texVLine c starty endy surf x 0 textureHeight tex
-  
-  texVLineLit (fromIntegral c) 
-              (fromIntegral starty) 
-              (fromIntegral endy) 
-              surf 
-              (fromIntegral x) 
-              0 
-              (fromIntegral textureHeight) 
-              (tex P.!! (fromIntegral i - 1))
-              (min 1.0 (128{-lightRadius-}/dist)) 
-
-  where 
-    height = floori_ (fromIntegral (vcViewDistance vc* wallHeight vc) / dist)
-    starty = endy - height 
-    endy   = floori_ (fromIntegral (viewportCenterY vc) + ((fromIntegral height) / 2))
-     
-    
 {-     
 ----------------------------------------------------------------------------      
 -- Cast for floors 
