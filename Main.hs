@@ -257,9 +257,15 @@ main = do
   --floorTex'   <- loadBMP "Data/floor1.bmp"            
   --floorTex    <- convertSurface floorTex' pf [] 
                  
-  wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
-                           ,conv pf =<< loadBMP "Data/textureLarge2.bmp"]
+  --wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
+  --                         ,conv pf =<< loadBMP "Data/textureLarge2.bmp"]
                  
+  -- These textures are not in the repo yet.          
+  wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall2.bmp"
+                           ,conv pf =<< loadBMP "Data/Wall3.bmp"
+                           ,conv pf =<< loadBMP "Data/Door1.bmp"]
+  
+  
   floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
                             ,conv pf =<< loadBMP "Data/floor2.bmp"
                             ,conv pf =<< loadBMP "Data/floor3.bmp"
@@ -269,7 +275,7 @@ main = do
                  
   eventLoop vc screen floorTextures wallTextures -- testTexture floorTex
     (False,False,False,False) -- Keyboard state
-    (0.0,7*wallWidth vc ,7*wallWidth vc)
+    (0.0,256+128 ,256+128)
   
   quit
     where 
@@ -293,7 +299,7 @@ eventLoop vc screen floorTextures wallTextures(up,down,left,right) (r,x,y) = do
   
   fillRect screen 
            (Just (Rect 0 0 800 600)) 
-           =<< mapRGB pf 16 16 16 
+           =<< mapRGB pf 2 2 2 
   
   slices <- renderWalls vc testLevelArr ((x,y),r) wallTextures screen
   -- newFloorCast testLevelFloorArr (x,y) r slices floorTextures screen

@@ -56,7 +56,7 @@ castRay vc world (pos,angle) column =
         bot 
         texValue 
         texCol 
-        (min 1.0 (128 {-lightradius-}/dist)) 
+        (min 1.0 (4096 {-lightradius-}/(dist*dist))) 
         dist 
   where 
     ray  = mkRay pos (angle - columnAngle)
