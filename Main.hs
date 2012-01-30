@@ -102,6 +102,61 @@ textureWidth, textureHeight :: Int32
 textureWidth    = 256 
 textureHeight   = 256
 
+{-
+-- Paste from RayPortal
+----------------------------------------------------------------------------
+-- sprites (a movable or stationary object in the 2world) 
+data Sprite = Sprite { spritePos       :: Point2D,      -- world x,y pos 
+                       spriteElevation :: Float,        -- height above ground (z) 
+                       spriteDims      :: (Float,Float),-- Base size  
+                       spriteTexture   :: Surface}
+                       
+
+-- transform a world object into a screen object. 
+-- ignoring elevation from floor currently. 
+viewTransformSprite :: Point2D -> Float -> Sprite -> Maybe RItem
+viewTransformSprite viewPos viewAngle spr  
+  | ry >= 0 =
+    Just $ RItem (projx_,viewportCenterY-(mh `div` 2)) 
+                 (mw,mh) 
+                 (spriteTexture spr) 
+                 dist
+  | otherwise = Nothing 
+          
+  where 
+    (mx,my) = spritePos spr `vecSub` viewPos 
+    rx      = mx * cos (-viewAngle) - my * sin (-viewAngle) 
+    ry      = my * cos (-viewAngle) + mx * sin (-viewAngle) 
+    
+    dist    = sqrt (rx*rx+ry*ry)
+    
+    mw = fromIntegral $ floori_ (256*(fromIntegral viewDistance/ dist))
+    mh = fromIntegral $ floori_ (256*(fromIntegral viewDistance/ dist))
+    projx = rx * fromIntegral viewDistance / ry  
+                
+    projx_ = (fromIntegral (floori_ projx)) + (viewportCenterX - (mw `div` 2))    
+    
+-- An objected projected onto screen 
+data RItem = RItem { rItemPos  :: (Int32,Int32), -- position on screen
+                     rItemDims :: (Int32,Int32),
+                     rItemTexture :: Surface, 
+                     rItemDepth   :: Float} -- distance from Viewer (used for clipping against walls) 
+                     
+                       
+renderRItem :: Surface -> [Float] -> RItem -> IO () 
+renderRItem surf dists ritem= 
+  drawTransparentZ (rItemTexture ritem) 
+                   surf 
+                   (Rect x y w h) dist dists
+  where 
+    x = fromIntegral$ fst $ rItemPos ritem                 
+    y = fromIntegral$ snd $ rItemPos ritem 
+    w = fromIntegral$ fst $ rItemDims ritem
+    h = fromIntegral$ snd $ rItemDims ritem
+    dist = rItemDepth ritem 
+
+-}
+
 {-     
 ----------------------------------------------------------------------------      
 -- Cast for floors 
@@ -257,13 +312,14 @@ main = do
   --floorTex'   <- loadBMP "Data/floor1.bmp"            
   --floorTex    <- convertSurface floorTex' pf [] 
                  
-  --wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
-  --                         ,conv pf =<< loadBMP "Data/textureLarge2.bmp"]
+  wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
+                           ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
                  
   -- These textures are not in the repo yet.          
-  wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall2.bmp"
-                           ,conv pf =<< loadBMP "Data/Wall3.bmp"
-                           ,conv pf =<< loadBMP "Data/Door1.bmp"]
+  --wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall2.bmp"
+  --                         ,conv pf =<< loadBMP "Data/Wall3.bmp"
+  --                         ,conv pf =<< loadBMP "Data/Door1.bmp"]
   
   
   floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
