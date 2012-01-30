@@ -12,7 +12,9 @@
   + Figure out how to Profile (SDL library made for profiling needed).
   + Colision agains walls needs improvement.  
   + Add "sprites" (for items and enemies) 
+    Copy the sprite code from RayPortal. 
   + Add Doors 
+  + Lighting (lightmaps most likely) 
 
 * Notes 
   + The Haskell floor function was extremely slow. All calls to floor 
