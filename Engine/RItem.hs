@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {- 
   RItem. render item
 
@@ -43,6 +44,7 @@ renderRItem surf dists ritem =
     dist = rItemDepth ritem 
 
 
+-- TODO: Implement this function in C  (only problem is what to do with the depths list) 
 drawTransparentZ :: Surface -> Surface -> Rect -> Float -> [Float] -> IO ()                
 drawTransparentZ  tr surf (Rect x y w h) depth depths 
   | outside = return () -- sprite is completely outside of target surface  
@@ -56,7 +58,7 @@ drawTransparentZ  tr surf (Rect x y w h) depth depths
       let depthsArr = listArray (0,length depths-1) depths        
                   
       sequence_ [do 
-                  p <- peekElemOff srcPixels 
+                  (p :: Word32) <- peekElemOff srcPixels 
                                        (fromIntegral (floori_ (xJump+(fromIntegral i*rx)))+
                                         (fromIntegral columns)* 
                                         fromIntegral (floori_ (yJump+(fromIntegral j *ry))))
@@ -65,7 +67,8 @@ drawTransparentZ  tr surf (Rect x y w h) depth depths
                   let p0  = p .&. 255 
                       p1  = p `shiftR` 8 .&. 255 
                       p2  = p `shiftR` 16 .&. 255 
-                      -- p3  = p `shiftR` 24 .&. 255 
+                      p3  = p `shiftR` 24 .&. 255 -- Alfa (seethroughness) 
+                      
                       p0' =  floor_ $ intensity * (fromIntegral p0) 
                       p1' =  floor_ $ intensity * (fromIntegral p1) 
                       p2' =  floor_ $ intensity * (fromIntegral p2) 
@@ -76,7 +79,7 @@ drawTransparentZ  tr surf (Rect x y w h) depth depths
                   -- how bad is it to use a depths list (lookups are linear                      
                   -- but there are only a maximum of viewportWidth lookups per frame.
                   -- Probably bad anyway
-                  if ((Pixel p) /= seeThrough && depth < (depthsArr ! (clippedX+i)))  
+                  if (p3 /= 0 {-(Pixel p) /= seeThrough-} && depth < (depthsArr ! (clippedX+i)))  
                   then pokeElemOff targPixels (start+(i+width*j)) (p' :: Word32) 
                   else return ()
                   -- if (depth > (depthsArr ! (clippedX+i))) 

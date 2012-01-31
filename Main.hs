@@ -68,7 +68,7 @@ testLevel = [[1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]] 
+             [1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1]] 
             
 testFloor = [[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
              [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
@@ -255,7 +255,8 @@ main = do
   -- These textures are not in the repo yet.          
   wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall3.bmp"
                            ,conv pf =<< loadBMP "Data/Wall2.bmp"
-                           ,conv pf =<< loadBMP "Data/Door1.bmp"]
+                           ,conv pf =<< loadBMP "Data/Door.bmp"
+                           ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
   
   
   floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
@@ -264,7 +265,7 @@ main = do
                             ,conv pf =<< loadBMP "Data/floor4.bmp" ]
 
   
-  monster <- conv pf =<< loadBMP "Data/eye1.bmp"  
+  monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
   let monsterSprite = Sprite (256+128,13*256+128)
                              0
                              (256,256) 
