@@ -30,6 +30,8 @@ import Engine.RayCast
 import Engine.Math
 import Engine.Map
 import Engine.Render
+import Engine.RItem
+import Engine.Sprite 
 
 import Control.Monad
 import Data.Array
@@ -51,7 +53,7 @@ import MathExtras
 ----------------------------------------------------------------------------
 --
     
-testLevel = [[1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2], 
+testLevel = [[1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
              [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -66,7 +68,7 @@ testLevel = [[1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-             [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2]] 
+             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]] 
             
 testFloor = [[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
              [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
@@ -95,130 +97,6 @@ testLevelFloorArr = listArray (0,15) (map (listArray (0,15)) testFloor)
 -- Constants 
 
 walkSpeed      = 32 
-
--- This should be part of the "rendering settings"
--- or attached to texture objects somehow. 
-textureWidth, textureHeight :: Int32 
-textureWidth    = 256 
-textureHeight   = 256
-
-
--- Paste from RayPortal
-----------------------------------------------------------------------------
--- sprites (a movable or stationary object in the 2world) 
-data Sprite = Sprite { spritePos       :: Point2D,      -- world x,y pos 
-                       spriteElevation :: Float,        -- height above ground (z) 
-                       spriteDims      :: (Float,Float),-- Base size  
-                       spriteTexture   :: Surface}
-                       
-
--- transform a world object into a screen object. 
--- ignoring elevation from floor currently. 
-viewTransformSprite :: ViewConfig -> View -> Sprite -> Maybe RItem
-viewTransformSprite vc (viewPos,viewAngle) spr  
-  | ry >= 0 =
-    Just $ RItem (projx_,viewportCenterY vc -(mh `div` 2)) 
-                 (mw,mh) 
-                 (spriteTexture spr) 
-                 (ry) -- dist
-  | otherwise = Nothing 
-          
-  where 
-    (mx',my') = spritePos spr `vecSub` viewPos 
-    (mx,my)   = (fromIntegral mx',fromIntegral my')
-    rx      = fromIntegral$ floori_$ mx * cos (-viewAngle) - my * sin (-viewAngle) 
-    ry      = fromIntegral$ floori_$ my * cos (-viewAngle) + mx * sin (-viewAngle) 
-    
-    dist    = sqrt (rx*rx+ry*ry)
-    
-    mw = fromIntegral $ floori_ (256*(fromIntegral (vcViewDistance vc)/ dist))
-    mh = fromIntegral $ floori_ (256*(fromIntegral (vcViewDistance vc)/ dist))
-    projx = rx * fromIntegral (vcViewDistance vc) / ry  
-                
-    projx_ = (fromIntegral (floori_ projx)) + (viewportCenterX vc - (mw `div` 2))    
-    
--- An objected projected onto screen 
-data RItem = RItem { rItemPos  :: (Int32,Int32), -- position on screen
-                     rItemDims :: (Int32,Int32),
-                     rItemTexture :: Surface, 
-                     rItemDepth   :: Float} -- distance from Viewer (used for clipping against walls) 
-                     
-                       
-renderRItem :: Surface -> [Float] -> RItem -> IO () 
-renderRItem surf dists ritem = 
-  drawTransparentZ (rItemTexture ritem) 
-                   surf 
-                   (Rect x y w h) dist dists
-  where 
-    x = fromIntegral$ fst $ rItemPos ritem                 
-    y = fromIntegral$ snd $ rItemPos ritem 
-    w = fromIntegral$ fst $ rItemDims ritem
-    h = fromIntegral$ snd $ rItemDims ritem
-    dist = rItemDepth ritem 
-
-
-drawTransparentZ :: Surface -> Surface -> Rect -> Float -> [Float] -> IO ()                
-drawTransparentZ  tr surf (Rect x y w h) depth depths 
-  | outside = return () -- sprite is completely outside of target surface  
-  | otherwise = 
-    do 
-      seeThrough <- mapRGB pf 255 0 255 
-      targPixels <- castPtr `fmap` surfaceGetPixels surf
-      srcPixels  <- castPtr `fmap` surfaceGetPixels tr 
-      
-      -- No visible improvement in speed.
-      let depthsArr = listArray (0,length depths-1) depths        
-                  
-      sequence_ [do 
-                  pixel <- peekElemOff srcPixels 
-                                       (fromIntegral (floori_ (xJump+(fromIntegral i*rx)))+
-                                        (fromIntegral columns)* 
-                                        fromIntegral (floori_ (yJump+(fromIntegral j *ry))))
-                                       
-                  -- how bad is it to use a depths list (lookups are linear                      
-                  -- but there are only a maximum of viewportWidth lookups per frame.
-                  -- Probably bad anyway
-                  if ((Pixel pixel) /= seeThrough && depth < (depthsArr ! (clippedX+i)))  
-                  then pokeElemOff targPixels (start+(i+width*j)) (pixel :: Word32) 
-                  else return ()
-                  -- if (depth > (depthsArr ! (clippedX+i))) 
-                  -- then putStrLn "clipping dist"
-                  -- else return ()
-
-                | i <- [0..clippedW-1] , j <- [0..clippedH-1]] 
-                  
-    where 
-      
-      rx      = (fromIntegral columns / fromIntegral w) 
-      ry      = (fromIntegral rows / fromIntegral h) 
-
-
-      -- if completely outside.  
-      outside = (x > width || y > height || 
-                 x < -w || y < -h)
- 
-      clippedX = x1' 
-      clippedY = y1' 
- 
-      xJump    = rx * fromIntegral (clippedX - x) --how far to jump in texture
-      yJump    = ry * fromIntegral (clippedY - y)
-
-      (x1',y1') = (if x < 0 then 0 else x, if y < 0 then 0 else y) 
-      (x2',y2') = (if (x+w) >= width then width-1 else x+w, 
-                   if (y+h) >= height then height-1 else y+h) 
-
-      clippedW = x2'-x1'
-      clippedH = y2'-y1'
-      
-      start   = clippedX + clippedY * width 
-      width   = surfaceGetWidth surf
-      height  = surfaceGetHeight surf
-     
-      pf      = surfaceGetPixelFormat surf
-      columns = surfaceGetWidth tr  
-      rows    = surfaceGetHeight tr  
-
-
 
 {-     
 ----------------------------------------------------------------------------      
@@ -369,20 +247,15 @@ main = do
   putStrLn$ arr2dStr$ testLevelArr
   
   let pf = surfaceGetPixelFormat screen
-      
-  --testTexture' <- loadBMP "Data/textureLarge1.bmp" 
-  --testTexture <- convertSurface testTexture' pf [] 
-  --floorTex'   <- loadBMP "Data/floor1.bmp"            
-  --floorTex    <- convertSurface floorTex' pf [] 
-                 
-  wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
-                           ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
-                           ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
+                       
+  --wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
+  --                         ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
+  --                         ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
                  
   -- These textures are not in the repo yet.          
-  --wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall2.bmp"
-  --                         ,conv pf =<< loadBMP "Data/Wall3.bmp"
-  --                         ,conv pf =<< loadBMP "Data/Door1.bmp"]
+  wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall3.bmp"
+                           ,conv pf =<< loadBMP "Data/Wall2.bmp"
+                           ,conv pf =<< loadBMP "Data/Door1.bmp"]
   
   
   floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"

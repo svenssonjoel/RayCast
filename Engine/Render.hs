@@ -21,12 +21,6 @@ import CExtras
 import MathExtras
 
 
--- This should be part of the "rendering settings"
--- or attached to texture objects somehow. 
---textureWidth, textureHeight :: Int32 
---textureWidth    = 256 
---textureHeight   = 256
-
 
 ----------------------------------------------------------------------------
 -- rendering routines 

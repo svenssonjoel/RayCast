@@ -1,7 +1,10 @@
 
 ENGINEFILES = ./Engine/Math.hs \
               ./Engine/Map.hs \
-              ./Engine/RayCast.hs
+              ./Engine/RayCast.hs \
+              ./Engine/Render.hs \
+              ./Engine/RItem.hs \
+              ./Engine/Sprite.hs
 
 all: main
 
