@@ -6,13 +6,12 @@
   + Textured walls
   + Textured floors and ceilings 
   + crude collision against walls detection
-  
+  + Sprites (moving and stationary objects, 2D images "billboarded" into the world)  
   
 * TODOs 
+  + Reimplement the functions that does actual rendering in C 
   + Figure out how to Profile (SDL library made for profiling needed).
-  + Colision agains walls needs improvement.  
-  + Add "sprites" (for items and enemies) 
-    Copy the sprite code from RayPortal. 
+  + Collision agains walls needs improvement.  
   + Add Doors 
   + Lighting (lightmaps most likely) 
 

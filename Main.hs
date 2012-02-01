@@ -70,22 +70,23 @@ testLevel = [[1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
              [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
              [1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1]] 
             
-testFloor = [[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3],
-             [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-             [2,3,2,3,2,3,2,3,2,3,2,3,2,3,2,3]]
+testFloor = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --0
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --1
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --2
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --3
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --4
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --5
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --6
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --7
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --8
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --9
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --10
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --11
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --12
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --13
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --14
+             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]  --15
+            ]
 
 testLevelArr :: Array2D Int32 Int32 
 testLevelArr = listArray (0,15) (map (listArray (0,15)) testLevel)
@@ -98,16 +99,16 @@ testLevelFloorArr = listArray (0,15) (map (listArray (0,15)) testFloor)
 
 walkSpeed      = 32 
 
-{-     
+    
 ----------------------------------------------------------------------------      
 -- Cast for floors 
 -- The slices are just there to be able to make some optimisations.              
-newFloorCast :: MapType -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
-newFloorCast world pos angle slices textures surf =              
-  zipWithM_ (newFloorCastColumn world pos angle textures surf) slices [0..windowWidth-1]
+newFloorCast :: ViewConfig -> MapType -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
+newFloorCast vc world pos angle slices textures surf =              
+  zipWithM_ (newFloorCastColumn vc world pos angle textures surf) slices [0..vcWindowWidth vc -1]
              
-newFloorCastColumn :: MapType -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
-newFloorCastColumn world (px,py) angle tex surf slice col = 
+newFloorCastColumn :: ViewConfig -> MapType -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
+newFloorCastColumn vc world (px,py) angle tex surf slice col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
     texels <- mapM ((return . castPtr) <=< surfaceGetPixels) tex
@@ -116,10 +117,10 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
                | (r,xyd)<- zip rows ps]  
   where 
     radians = angle - columnAngle
-    columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
+    columnAngle = atan (fromIntegral (col - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
     
     -- only check floor where there are no walls (optimisation) 
-    rows = [sliceBot slice..windowHeight-1]
+    rows = [sliceBot slice..vcWindowHeight vc-1]
     -- rows = [viewportCenterY+1..windowHeight-1]              
 
 
@@ -128,19 +129,19 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
          | r <- rows
          , let distance = rowDistance r] 
     
-    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY) 
+    ratioHeightRow row = 128 {-fromIntegral viewerHeight-} / fromIntegral (row - viewportCenterY vc) 
                          
     
-    rowDistance row = ratioHeightRow row * fromIntegral viewDistance / cos columnAngle
+    rowDistance row = ratioHeightRow row * fromIntegral (vcViewDistance vc) / cos columnAngle
          
     renderPoint :: [Ptr Word32] -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
     renderPoint tex surf row col (x,y,dist) = 
       do 
-        let (tx,ty) = (floori_ x `div` wallWidth, floori_ y `div` wallWidth) 
+        let (tx,ty) = (floori_ x `div` wallWidth vc, floori_ y `div` wallWidth vc) 
         
         p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
         
-        let i = (min 1.0 (lightRadius/dist)) 
+        let i = (min 1.0 (32768/(dist*dist))) 
         let p0  = p .&. 255 
             p1  = p `shiftR` 8 .&. 255 
             p2  = p `shiftR` 16 .&. 255 
@@ -155,13 +156,13 @@ newFloorCastColumn world (px,py) angle tex surf slice col =
         pokeElemOff surf (fromIntegral r2) p'     -- ceiling...   
         
         where 
-          t  = ((floori_ y .&. modMask) * textureWidth + (floori_ x .&. modMask))
-          r  = (row * windowWidth + col)
-          r2 = ((windowHeight-row-1) * windowWidth + col )
-    
+          t  = ((floori_ y .&. modMask vc) * textureWidth + (floori_ x .&. modMask vc))
+          r  = (row * (vcWindowWidth vc) + col)
+          r2 = ((vcWindowHeight vc -row-1) * (vcWindowWidth vc) + col )
+          textureWidth = 256 -- fix this !!! surfaceGetWidth tex
   
   
-  
+{-   
 floorCast :: Array2D Int32 Int32 -> Int32 -> Int32 -> Float -> Surface -> [Surface] -> IO ()              
 floorCast world px py angle surf texture = 
     sequence_ [floorCastColumn world px py angle surf texture col
@@ -259,7 +260,8 @@ main = do
                            ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
   
   
-  floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
+  floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
+                            ,conv pf =<< loadBMP "Data/floor1.bmp"
                             ,conv pf =<< loadBMP "Data/floor2.bmp"
                             ,conv pf =<< loadBMP "Data/floor3.bmp"
                             ,conv pf =<< loadBMP "Data/floor4.bmp" ]
@@ -304,7 +306,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
            =<< mapRGB pf 2 2 2 
   
   slices <- renderWalls vc testLevelArr ((x,y),r) wallTextures screen
-  -- newFloorCast testLevelFloorArr (x,y) r slices floorTextures screen
+  newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
   
   let dists  = map sliceDistance slices 
   
