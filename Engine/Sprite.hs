@@ -22,7 +22,7 @@ data Sprite = Sprite { spritePos       :: Point2D,      -- world x,y pos
 -- World space object to screen space renderable object 
 viewTransformSprite :: ViewConfig -> View -> Sprite -> Maybe RItem
 viewTransformSprite vc (viewPos,viewAngle) spr  
-  | ry >= 0 =
+  | ry > 0 = --(using > in place of >= fixed a visible glitch) 
     Just $ RItem (projx_,viewportCenterY vc -(mh `div` 2)) 
                  (mw,mh) 
                  (spriteTexture spr) 

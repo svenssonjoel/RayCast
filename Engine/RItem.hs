@@ -11,15 +11,17 @@ module Engine.RItem where
 import Graphics.UI.SDL
 
 import Engine.RayCast
+import Engine.ZBuffer
 
-import Foreign.Ptr
-import Foreign.Storable
-import Foreign.Marshal.Array
+--import Foreign.Ptr
+--import Foreign.Storable
+--import Foreign.Marshal.Array
 
 import Data.Int
 import Data.Word
 import Data.Array
 import Data.Bits
+import Data.List 
 
 import CExtras
 import MathExtras
@@ -30,12 +32,17 @@ data RItem = RItem { rItemPos  :: (Int32,Int32), -- position on screen
                      rItemTexture :: Surface, 
                      rItemDepth   :: Float} -- distance from Viewer (used for clipping against walls) 
                      
+sortRItems = sortBy depth 
+  where 
+    depth r1 r2 = compare (rItemDepth r2) (rItemDepth r1) 
+
                                    
-renderRItem :: Surface -> [Float] -> RItem -> IO () 
+renderRItem :: Surface -> ZBuffer -> RItem -> IO () 
 renderRItem surf dists ritem = 
-  drawTransparentZ (rItemTexture ritem) 
-                   surf 
-                   (Rect x y w h) dist dists
+  renderRItemC_ x y w h surf (rItemTexture ritem) dist (fromZBuffer dists)
+  --drawTransparentZ (rItemTexture ritem) 
+  --                 surf 
+  --                 (Rect x y w h) dist dists
   where 
     x = fromIntegral$ fst $ rItemPos ritem                 
     y = fromIntegral$ snd $ rItemPos ritem 
@@ -44,7 +51,8 @@ renderRItem surf dists ritem =
     dist = rItemDepth ritem 
 
 
--- TODO: Implement this function in C  (only problem is what to do with the depths list) 
+-- DONE: Implement this function in C  (only problem is what to do with the depths list) 
+{- 
 drawTransparentZ :: Surface -> Surface -> Rect -> Float -> [Float] -> IO ()                
 drawTransparentZ  tr surf (Rect x y w h) depth depths 
   | outside = return () -- sprite is completely outside of target surface  
@@ -112,6 +120,7 @@ drawTransparentZ  tr surf (Rect x y w h) depth depths
       width   = surfaceGetWidth surf
       height  = surfaceGetHeight surf
      
-      pf      = surfaceGetPixelFormat surf
+      -- pf      = surfaceGetPixelFormat surf
       columns = surfaceGetWidth tr  
       rows    = surfaceGetHeight tr  
+-} 

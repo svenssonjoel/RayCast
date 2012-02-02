@@ -1,8 +1,19 @@
+/* 2012 Joel Svensson 
+   
+   
+ */ 
+
+#include <stdint.h>
+#include <math.h>
 
 #include <SDL/SDL.h> 
 
 // #include <stdio.h>
 
+/* -----------------------------------------------------------------------------
+
+
+   -------------------------------------------------------------------------- */
 void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
 		   int xt, int yt0, int yt1, SDL_Surface *text) {
 
@@ -28,8 +39,12 @@ void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
     sp[y * sw + x] = tp[texHeight * ty + xt];
   } 
 }
- 
 
+
+/* -----------------------------------------------------------------------------
+
+
+   -------------------------------------------------------------------------- */
 void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
 		      int xt, int yt0, int yt1, SDL_Surface *text, float intensity) {
 
@@ -60,6 +75,76 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
 
   } 
 }
+
+/* -----------------------------------------------------------------------------
+   Render a textured billboarded 2D sprite  (called RItem in the Haskell code) 
+   -------------------------------------------------------------------------- */
+
+void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect and surface 
+                 SDL_Surface *text, float depth, float *depths) { // sprite image and depth and world depths 
+  
+  int width   = surf->w;
+  int height  = surf->h;
+  int columns = text->w;
+  int rows    = text->h;
+
+  // if completely outside of target, just skip.
+  if (x > width || y > height || x < -w || y < -h) return; 
+  
+  int32_t *targPixels = (int32_t*)surf->pixels;
+  int32_t *srcPixels  = (int32_t*)text->pixels;
+  
+  int x1 = x < 0 ? 0 : x;
+  int y1 = y < 0 ? 0 : y;
+ 
+  int x2 = (x+w) >= width  ? width-1  : x+w;
+  int y2 = (y+h) >= height ? height-1 : y+h; 
+  
+
+  int clippedW = x2-x1;
+  int clippedH = y2-y1;
+  if (!clippedW || !clippedH) return; // should not matter (very rare!) 
+
+  int start = x1 + y1 * width;
+
+  float rx = (float)columns / w;
+  float ry = (float)rows / h; 
+
+  int xJump = (rx * (float)(x1-x));
+  int yJump = (ry * (float)(y1-y)); 
+
+  int j;
+  int i; 
+ 
+  float intensity = fmin(1.0,32768.0/(depth*depth));
+
+
+  for (j = 0; j < clippedH; j++) { 
+    for (i = 0; i < clippedW; i++) {
+      int32_t p = srcPixels[(xJump+(int)(i*rx))+
+			    columns * (yJump + (int)(j*ry))];
+      if (depth >= depths[x1+i]) continue; 
+      int32_t p0 = p & 255;
+      int32_t p1 = p >> 8  & 255;
+      int32_t p2 = p >> 16 & 255;
+      int32_t p3 = p >> 24 & 255; 
+
+      if (p3 != 0) { 
+	int32_t p01 = (int)(intensity * p0);
+	int32_t p11 = (int)(intensity * p1);
+	int32_t p21 = (int)(intensity * p2);
+	
+	int32_t pNew = p01 + (p11 << 8) + (p21 << 16); 
+	
+	targPixels[start+(i+width*j)] = pNew;
+      }
+     
+    }
+
+  }
+  
+}
+
 
 
 

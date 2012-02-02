@@ -32,9 +32,11 @@ import Engine.Map
 import Engine.Render
 import Engine.RItem
 import Engine.Sprite 
+import Engine.ZBuffer
 
 import Control.Monad
 import Data.Array
+import Data.Maybe
 
 import Data.Word
 import Data.Bits
@@ -249,37 +251,37 @@ main = do
   
   let pf = surfaceGetPixelFormat screen
                        
-  wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
-                           ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
-                           ,conv pf =<< loadBMP "Data/textureLarge1.bmp"
-                           ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
+  --wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
+  --                         ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
+  --                         ,conv pf =<< loadBMP "Data/textureLarge1.bmp"
+  --                         ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
                  
   -- These textures are not in the repo yet.          
-  --wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall3.bmp"
-  --                         ,conv pf =<< loadBMP "Data/Wall2.bmp"
-  --                         ,conv pf =<< loadBMP "Data/Door.bmp"
-  --                         ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
+  wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall3.bmp"
+                           ,conv pf =<< loadBMP "Data/Wall2.bmp"
+                           ,conv pf =<< loadBMP "Data/Door.bmp"
+                           ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
   
   
-  --floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
-  --                          ,conv pf =<< loadBMP "Data/floor1.bmp"
-  --                          ,conv pf =<< loadBMP "Data/floor2.bmp"
-  --                          ,conv pf =<< loadBMP "Data/floor3.bmp"
-  --                          ,conv pf =<< loadBMP "Data/floor4.bmp" ]
-
-  floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
+  floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
                             ,conv pf =<< loadBMP "Data/floor1.bmp"
                             ,conv pf =<< loadBMP "Data/floor2.bmp"
                             ,conv pf =<< loadBMP "Data/floor3.bmp"
                             ,conv pf =<< loadBMP "Data/floor4.bmp" ]
 
+  --floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor1.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor2.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor3.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor4.bmp" ]
+
   
-  --monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
-  monster <- conv pf =<< loadBMP "Data/eye1.bmp"  
-  let monsterSprite = Sprite (256+128,13*256+128)
-                             0
-                             (256,256) 
-                             monster 
+  monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
+  --monster <- conv pf =<< loadBMP "Data/eye1.bmp"  
+  let monsterSprite = [Sprite ((x+5)*256+128,(y+1)*256+128)
+                              0
+                              (256,256) 
+                              monster | x <- [0..10], y <- [0..10]] 
                    
   
                  
@@ -298,7 +300,7 @@ eventLoop :: ViewConfig
              -> Surface 
              -> [Surface] 
              -> [Surface] 
-             -> Sprite
+             -> [Sprite]
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Int32, Int32) 
              -> IO ()
@@ -314,15 +316,18 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
            =<< mapRGB pf 2 2 2 
   
   slices <- renderWalls vc testLevelArr ((x,y),r) wallTextures screen
-  newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
+--   newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
   
   let dists  = map sliceDistance slices 
   
-  -- testSprite. 
-                             
-  let monsterTfrmd = viewTransformSprite vc ((x,y),r) monster
-  maybe (return ()) (renderRItem screen dists) monsterTfrmd
+  let monsterTfrmd = map (viewTransformSprite vc ((x,y),r)) monster    
+      monsterTfrmd' = sortRItems (catMaybes monsterTfrmd) 
   
+  -- sort monsters or update the zbuffer. (probably stick to sort) 
+      
+  withZBuffer dists (\zbuf -> 
+                      sequence_ $ map (renderRItem screen zbuf) monsterTfrmd' 
+                    )
   
   SDL.flip screen
   
