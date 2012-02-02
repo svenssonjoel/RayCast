@@ -73,14 +73,14 @@ testLevel = [[1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
              [1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1]] 
             
 testFloor = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --0
-             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --1
-             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --2
+             [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --1
+             [0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --2
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --3
-             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --4
-             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --5
+             [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --4
+             [0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --5
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --6
-             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --7
-             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --8
+             [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --7
+             [0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --8
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --9
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --10
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --11
@@ -262,13 +262,16 @@ main = do
                            ,conv pf =<< loadBMP "Data/Wall2.bmp"
                            ,conv pf =<< loadBMP "Data/Door.bmp"
                            ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
+   
+  floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor1.bmp"
+                            ,conv pf =<< loadBMP "Data/Floor2.bmp"
+                            ,conv pf =<< loadBMP "Data/Floor3.bmp"]
   
-  
-  floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
-                            ,conv pf =<< loadBMP "Data/floor1.bmp"
-                            ,conv pf =<< loadBMP "Data/floor2.bmp"
-                            ,conv pf =<< loadBMP "Data/floor3.bmp"
-                            ,conv pf =<< loadBMP "Data/floor4.bmp" ]
+  --floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor1.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor2.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor3.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor4.bmp" ]
 
   --floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
   --                          ,conv pf =<< loadBMP "Data/floor1.bmp"
@@ -315,13 +318,20 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   fillRect screen 
            (Just (Rect 0 0 800 600)) 
            =<< mapRGB pf 2 2 2 
-  
-  slices <- renderWalls vc testLevelArr ((x,y),r) wallTextures screen
-  -- newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
+  let lights = ([Light (x,y) (0.5,0.5,0.5)] ++ 
+                         [Light ((i+5)*256+128,(j+1)*256+128) (0.0,0.02,0.0) 
+                         | i <- [0..1], j <- [0..10]])
+  slices <- renderWalls vc 
+                        testLevelArr 
+                        lights 
+                        ((x,y),r) 
+                        wallTextures 
+                        screen
+  newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
   
   let dists  = map sliceDistance slices 
   
-  let monsterTfrmd = map (viewTransformSprite vc ((x,y),r)) monster    
+  let monsterTfrmd = map (viewTransformSprite vc lights ((x,y),r)) monster    
       monsterTfrmd' = sortRItems (catMaybes monsterTfrmd) 
   
   -- sort monsters or update the zbuffer. (probably stick to sort) 

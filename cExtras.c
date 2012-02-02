@@ -46,7 +46,10 @@ void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
 
    -------------------------------------------------------------------------- */
 void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
-		      int xt, int yt0, int yt1, SDL_Surface *text, float intensity) {
+		      int xt, int yt0, int yt1, SDL_Surface *text, 
+		      float intensityR, 
+		      float intensityG,
+		      float intensityB) {
 
   int y; 
   int sh = surf->h; 
@@ -68,9 +71,9 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
     float ty = (y - y0) * ratio;
 
 
-    sp[4 *(y * sw + x)]   = intensity * tp[4*(texHeight * (int)ty + xt)];
-    sp[4 *(y * sw + x)+1] = intensity * tp[4*(texHeight * (int)ty + xt)+1];
-    sp[4 *(y * sw + x)+2] = intensity * tp[4*(texHeight * (int)ty + xt)+2];
+    sp[4 *(y * sw + x)]   = intensityB * tp[4*(texHeight * (int)ty + xt)];
+    sp[4 *(y * sw + x)+1] = intensityG * tp[4*(texHeight * (int)ty + xt)+1];
+    sp[4 *(y * sw + x)+2] = intensityR * tp[4*(texHeight * (int)ty + xt)+2];
     //sp[4 *(y * sw + x)+3] = tp[4*(texHeight * texY + xt)+3];
 
   } 
@@ -81,7 +84,11 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
    -------------------------------------------------------------------------- */
 
 void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect and surface 
-                 SDL_Surface *text, float depth, float *depths) { // sprite image and depth and world depths 
+                 SDL_Surface *text, 
+                 float inR, 
+		 float inG, 
+		 float inB, 
+                 float depth, float *depths) { // sprite image and depth and world depths 
   
   int width   = surf->w;
   int height  = surf->h;
@@ -116,7 +123,7 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
   int j;
   int i; 
  
-  float intensity = fmin(1.0,32768.0/(depth*depth));
+  //  float intensity = fmin(1.0,32768.0/(depth*depth));
 
 
   for (j = 0; j < clippedH; j++) { 
@@ -129,9 +136,9 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
       unsigned char *p_ = (unsigned char*)&p;
       
       if (p_[3] != 0) { 	
-	p_[0] = (int)(p_[0] * intensity);
-	p_[1] = (int)(p_[1] * intensity);
-	p_[2] = (int)(p_[2] * intensity); 
+	p_[0] *= inB;
+	p_[1] *= inG;
+	p_[2] *= inR; 
        
 	// write the now updated p to target. 
 	targPixels[start+(i+width*j)] = p;

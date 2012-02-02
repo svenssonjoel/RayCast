@@ -39,7 +39,9 @@ data Slice = Slice {sliceTop :: Int32,
                     sliceBot :: Int32, 
                     sliceTex :: Int32,
                     sliceTexCol :: Int32,
-                    sliceIntensity :: Float,
+                    sliceIntensityR :: Float,  --Group these up 
+                    sliceIntensityG :: Float, 
+                    sliceIntensityB :: Float,
                     sliceDistance :: Float}
 
 ---------------------------------------------------------------------------- 
@@ -48,16 +50,20 @@ data Slice = Slice {sliceTop :: Int32,
 type View = (Point2D, Angle) 
 
 
+data Light = Light Point2D (Float,Float,Float) -- intensities. 
+
+
 ----------------------------------------------------------------------------
 -- raycasting  
 
-castRay :: ViewConfig -> Array2D Int32 Int32 -> View -> Int32 -> Slice 
-castRay vc world (pos,angle) column = 
+castRay :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> View -> Int32 -> Slice 
+castRay vc world lights (pos,angle) column = 
   Slice top 
         bot 
         texValue 
         texCol 
-        (min 1.0 (32768 {-lightradius-}/(dist*dist))) 
+        -- (min 1.0 (32768 {-lightradius-}/(dist*dist))) 
+        inR inG inB 
         dist 
   where 
     ray  = mkRay pos (angle - columnAngle)
@@ -67,21 +73,30 @@ castRay vc world (pos,angle) column =
     height = floori_ $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
     dist = dist' * cos columnAngle
     col = column - viewportCenterX vc
-    (dist', texValue, texCol) = castRay2 vc world 0.0 ray 
- 
-   
+    (dist', texValue, texCol,(inR,inG,inB)) = castRay2 vc world lights 0.0 ray 
     
-
+   
+lightContribution (px,py) (Light (lx,ly) (inR',inG',inB')) = (inR,inG,inB)    
+  where
+    -- How to really compute light contribution? 
+    lightdist = (distance (px,py) (lx,ly) / 256) 
+    ld = max 0.01 (lightdist * lightdist)
+    (inR,inG,inB) = (min 1.0 (inR'/ld),
+                     min 1.0 (inG'/ld),
+                     min 1.0 (inB'/ld))
+                    
+vec3add (x,y,z) (u,v,w) = (x+u,y+v,z+w)
+clamp i (x,y,z) = (min x i, min y i, min z i) 
 
 ----------------------------------------------------------------------------
 -- castRay2
-castRay2 :: ViewConfig -> Array2D Int32 Int32 -> Float -> Ray  -> (Float,Int32,Int32)
-castRay2 vc world accDist ray = 
+castRay2 :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> Float -> Ray  -> (Float,Int32,Int32,(Float,Float,Float))
+castRay2 vc world lights accDist ray = 
     if (value > 0) -- ray has struck solid wall
-    then (accDist+dist,value,offs) 
+    then (accDist+dist,value,offs,(inR,inG,inB)) 
     else 
       -- Continue along the ray 
-      castRay2 vc world (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+      castRay2 vc world lights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
 
         
   where 
@@ -92,6 +107,10 @@ castRay2 vc world accDist ray =
              then (rayY ray .&. gridMask vc) + wallWidth vc
              else (rayY ray .&. gridMask vc) -1 
                   
+    -- Experimental lighting 
+    (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (px,py))  lights)
+  
+    
     
     -- Create two lines for intersection test
     x_line = Line (fromIntegral grid_x,0) (fromIntegral grid_x,1) 
@@ -101,6 +120,9 @@ castRay2 vc world accDist ray =
     -- the closest one is used. 
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
+    
+    
+    
     
     ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 

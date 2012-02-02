@@ -26,13 +26,13 @@ import MathExtras
 -- rendering routines 
     
 -- renderWalls, to replace renderView
-renderWalls :: ViewConfig -> Array2D Int32 Int32 -> View -> [Surface] -> Surface -> IO [Slice]
-renderWalls vc world (pos,angle) textures surf = 
+renderWalls :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> View -> [Surface] -> Surface -> IO [Slice]
+renderWalls vc world lights (pos,angle) textures surf = 
   do 
     zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
     return slices
   where 
-    slices = map (castRay vc world (pos,angle))  [0..vcWindowWidth vc-1]
+    slices = map (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
     
 drawSlice :: [Surface] -> Surface -> Int32 -> Slice -> IO () 
 drawSlice textures surf col slice = 
@@ -44,11 +44,15 @@ drawSlice textures surf col slice =
               0 
               (textureHeight) 
               texture
-              (sliceIntensity slice) 
+              (sliceIntensityR slice) 
+              (sliceIntensityG slice)
+              (sliceIntensityB slice) 
   where 
     texture = textures  P.!! (fromIntegral (sliceTex slice - 1))
     textureHeight = surfaceGetHeight texture
         
+
+{-
 -- draw a single column into surf
 renderCol vc surf textures ((dist,i,x),c) = 
   -- vertLine c starty endy color surf
@@ -71,5 +75,5 @@ renderCol vc surf textures ((dist,i,x),c) =
     endy   = floori_ (fromIntegral (viewportCenterY vc) + ((fromIntegral height) / 2))
     textureHeight = surfaceGetHeight texture
     texture = textures P.!! (fromIntegral i - 1) 
-    
+-}   
 

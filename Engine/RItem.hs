@@ -30,7 +30,10 @@ import MathExtras
 data RItem = RItem { rItemPos  :: (Int32,Int32), -- position on screen
                      rItemDims :: (Int32,Int32),
                      rItemTexture :: Surface, 
-                     rItemDepth   :: Float} -- distance from Viewer (used for clipping against walls) 
+                     rItemDepth   :: Float,
+                     rItemIntensityR :: Float,
+                     rItemIntensityG :: Float,
+                     rItemIntensityB :: Float} -- distance from Viewer (used for clipping against walls) 
                      
 sortRItems = sortBy depth 
   where 
@@ -39,7 +42,11 @@ sortRItems = sortBy depth
                                    
 renderRItem :: Surface -> ZBuffer -> RItem -> IO () 
 renderRItem surf dists ritem = 
-  renderRItemC_ x y w h surf (rItemTexture ritem) dist dists
+  renderRItemC_ x y w h surf (rItemTexture ritem) 
+                             (rItemIntensityR ritem) 
+                             (rItemIntensityG ritem)
+                             (rItemIntensityB ritem)
+                             dist dists
   --drawTransparentZ (rItemTexture ritem) 
   --                 surf 
   --                 (Rect x y w h) dist dists

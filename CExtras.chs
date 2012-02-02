@@ -41,17 +41,19 @@ withFloatArray xs = withArray (fmap realToFrac xs)
     fromIntegral `Int',
     fromIntegral `Int',
     convSurface* `Surface',
+    realToFrac   `Float',
+    realToFrac   `Float', 
     realToFrac   `Float'  } -> `()' id  #}
 
-{# fun unsafe renderRItem as renderRItemC 
- { fromIntegral `Int' ,
-   fromIntegral `Int' ,
-   fromIntegral `Int' ,
-   fromIntegral `Int' ,  -- the Rect
-   convSurface* `Surface' , 
-   convSurface* `Surface' , 
-   realToFrac   `Float' ,
-   withFloatArray* `[Float]' } -> `()' id #}
+--{# fun unsafe renderRItem as renderRItemC 
+-- { fromIntegral `Int' ,
+--   fromIntegral `Int' ,
+--   fromIntegral `Int' ,
+--   fromIntegral `Int' ,  -- the Rect
+--   convSurface* `Surface' , 
+--   convSurface* `Surface' , 
+--   realToFrac   `Float' ,
+--   withFloatArray* `[Float]' } -> `()' id #}
 
 {# fun unsafe renderRItem as renderRItemC_ 
  { fromIntegral `Int' ,
@@ -59,7 +61,10 @@ withFloatArray xs = withArray (fmap realToFrac xs)
    fromIntegral `Int' ,
    fromIntegral `Int' ,  -- the Rect
    convSurface* `Surface' , 
-   convSurface* `Surface' , 
+   convSurface* `Surface' ,
+   realToFrac   `Float' ,
+   realToFrac   `Float' ,
+   realToFrac   `Float' , 
    realToFrac   `Float' ,
    fromZBuffer  `ZBuffer' } -> `()' id #}
 

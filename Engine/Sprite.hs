@@ -20,13 +20,14 @@ data Sprite = Sprite { spritePos       :: Point2D,      -- world x,y pos
 
 ----------------------------------------------------------------------------
 -- World space object to screen space renderable object 
-viewTransformSprite :: ViewConfig -> View -> Sprite -> Maybe RItem
-viewTransformSprite vc (viewPos,viewAngle) spr  
+viewTransformSprite :: ViewConfig -> [Light] -> View -> Sprite -> Maybe RItem
+viewTransformSprite vc lights (viewPos,viewAngle) spr  
   | ry > 0 = --(using > in place of >= fixed a visible glitch) 
     Just $ RItem (projx_,viewportCenterY vc -(mh `div` 2)) 
                  (mw,mh) 
                  (spriteTexture spr) 
                  (ry) -- dist
+                 inR inG inB 
   | otherwise = Nothing 
           
   where 
@@ -34,6 +35,12 @@ viewTransformSprite vc (viewPos,viewAngle) spr
     (mx,my)   = (fromIntegral mx',fromIntegral my')
     rx      = fromIntegral$ floori_$ mx * cos (-viewAngle) - my * sin (-viewAngle) 
     ry      = fromIntegral$ floori_$ my * cos (-viewAngle) + mx * sin (-viewAngle) 
+    
+    
+    -- Compute light 
+    (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (spritePos spr))  lights)
+  
+    
     
     dist    = sqrt (rx*rx+ry*ry)
     
