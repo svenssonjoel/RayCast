@@ -11,6 +11,8 @@ import Foreign.Marshal.Array
 
 import Graphics.UI.SDL
 
+import Engine.ZBuffer 
+
 #include "cExtras.h" 
 
 
@@ -59,10 +61,5 @@ withFloatArray xs = withArray (fmap realToFrac xs)
    convSurface* `Surface' , 
    convSurface* `Surface' , 
    realToFrac   `Float' ,
-   id           `Ptr CFloat' } -> `()' id #}
+   fromZBuffer  `ZBuffer' } -> `()' id #}
 
-
-
--- void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect and surface 
---                  SDL_Surface *text, float depth, float *depths) { // sprite image and depth and world depths 
-  

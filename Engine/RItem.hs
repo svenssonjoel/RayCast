@@ -39,7 +39,7 @@ sortRItems = sortBy depth
                                    
 renderRItem :: Surface -> ZBuffer -> RItem -> IO () 
 renderRItem surf dists ritem = 
-  renderRItemC_ x y w h surf (rItemTexture ritem) dist (fromZBuffer dists)
+  renderRItemC_ x y w h surf (rItemTexture ritem) dist dists
   --drawTransparentZ (rItemTexture ritem) 
   --                 surf 
   --                 (Rect x y w h) dist dists
