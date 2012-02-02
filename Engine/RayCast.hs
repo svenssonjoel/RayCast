@@ -16,6 +16,7 @@ import Prelude hiding ((!!))
 
 data ViewConfig = 
   ViewConfig { vcViewDistance :: Int32,
+               vcViewHeight   :: Int32,
                vcWindowWidth  :: Int32, 
                vcWindowHeight :: Int32, 
                vcWallDims     :: (Int32,Int32) } 

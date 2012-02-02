@@ -103,7 +103,7 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
 
   int clippedW = x2-x1;
   int clippedH = y2-y1;
-  if (!clippedW || !clippedH) return; // should not matter (very rare!) 
+  // if (!clippedW || !clippedH) return; // should not matter (very rare!) 
 
   int start = x1 + y1 * width;
 
@@ -123,20 +123,18 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
     for (i = 0; i < clippedW; i++) {
       int32_t p = srcPixels[(xJump+(int)(i*rx))+
 			    columns * (yJump + (int)(j*ry))];
-      if (depth >= depths[x1+i]) continue; 
-      int32_t p0 = p & 255;
-      int32_t p1 = p >> 8  & 255;
-      int32_t p2 = p >> 16 & 255;
-      int32_t p3 = p >> 24 & 255; 
 
-      if (p3 != 0) { 
-	int32_t p01 = (int)(intensity * p0);
-	int32_t p11 = (int)(intensity * p1);
-	int32_t p21 = (int)(intensity * p2);
-	
-	int32_t pNew = p01 + (p11 << 8) + (p21 << 16); 
-	
-	targPixels[start+(i+width*j)] = pNew;
+      if (depth >= depths[x1+i]) continue; 
+
+      unsigned char *p_ = (unsigned char*)&p;
+      
+      if (p_[3] != 0) { 	
+	p_[0] = (int)(p_[0] * intensity);
+	p_[1] = (int)(p_[1] * intensity);
+	p_[2] = (int)(p_[2] * intensity); 
+       
+	// write the now updated p to target. 
+	targPixels[start+(i+width*j)] = p;
       }
      
     }

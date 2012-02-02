@@ -236,10 +236,11 @@ main = do
   SDL.init [InitEverything] 
   
     
-  let vc = mkViewConfig (floori_ (800.0*0.6))   
-                        800 
-                        600 
-                        (256,256) 
+  let vc = mkViewConfig (floori_ (800.0*0.6)) -- viewDist  
+                        128    -- viewHeight
+                        800    -- windowWidth
+                        600    -- windowHeight
+                        (256,256)  -- wall dimensions
     
   setVideoMode 800 600 32 []
 
@@ -316,7 +317,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
            =<< mapRGB pf 2 2 2 
   
   slices <- renderWalls vc testLevelArr ((x,y),r) wallTextures screen
---   newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
+  -- newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
   
   let dists  = map sliceDistance slices 
   
