@@ -50,7 +50,7 @@ drawTransparentZ  tr surf (Rect x y w h) depth depths
   | outside = return () -- sprite is completely outside of target surface  
   | otherwise = 
     do 
-      seeThrough <- mapRGB pf 255 0 255 
+      -- seeThrough <- mapRGB pf 255 0 255 
       targPixels <- castPtr `fmap` surfaceGetPixels surf
       srcPixels  <- castPtr `fmap` surfaceGetPixels tr 
       
@@ -82,10 +82,7 @@ drawTransparentZ  tr surf (Rect x y w h) depth depths
                   if (p3 /= 0 {-(Pixel p) /= seeThrough-} && depth < (depthsArr ! (clippedX+i)))  
                   then pokeElemOff targPixels (start+(i+width*j)) (p' :: Word32) 
                   else return ()
-                  -- if (depth > (depthsArr ! (clippedX+i))) 
-                  -- then putStrLn "clipping dist"
-                  -- else return ()
-
+                  
                 | i <- [0..clippedW-1] , j <- [0..clippedH-1]] 
                   
     where 

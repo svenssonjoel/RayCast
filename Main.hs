@@ -249,25 +249,33 @@ main = do
   
   let pf = surfaceGetPixelFormat screen
                        
-  --wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
-  --                         ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
-  --                         ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
+  wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
+                           ,conv pf =<< loadBMP "Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
                  
   -- These textures are not in the repo yet.          
-  wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall3.bmp"
-                           ,conv pf =<< loadBMP "Data/Wall2.bmp"
-                           ,conv pf =<< loadBMP "Data/Door.bmp"
-                           ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
+  --wallTextures <- sequence [conv pf =<< loadBMP "Data/Wall3.bmp"
+  --                         ,conv pf =<< loadBMP "Data/Wall2.bmp"
+  --                         ,conv pf =<< loadBMP "Data/Door.bmp"
+  --                         ,conv pf =<< loadBMP "Data/DoorOpen.bmp"]
   
   
-  floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
+  --floorTextures <- sequence [conv pf =<< loadBMP "Data/Floor.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor1.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor2.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor3.bmp"
+  --                          ,conv pf =<< loadBMP "Data/floor4.bmp" ]
+
+  floorTextures <- sequence [conv pf =<< loadBMP "Data/floor1.bmp"
                             ,conv pf =<< loadBMP "Data/floor1.bmp"
                             ,conv pf =<< loadBMP "Data/floor2.bmp"
                             ,conv pf =<< loadBMP "Data/floor3.bmp"
                             ,conv pf =<< loadBMP "Data/floor4.bmp" ]
 
   
-  monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
+  --monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
+  monster <- conv pf =<< loadBMP "Data/eye1.bmp"  
   let monsterSprite = Sprite (256+128,13*256+128)
                              0
                              (256,256) 
