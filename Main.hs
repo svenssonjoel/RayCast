@@ -44,8 +44,6 @@ import Data.Int
 
 import SDLUtils 
 
-import System.IO.Unsafe
-
 import Foreign.Ptr
 import Foreign.Storable 
 import Foreign.Marshal.Array
@@ -163,73 +161,7 @@ newFloorCastColumn vc world (px,py) angle tex surf slice col =
           r2 = ((vcWindowHeight vc -row-1) * (vcWindowWidth vc) + col )
           textureWidth = 256 -- fix this !!! surfaceGetWidth tex
   
-  
-{-   
-floorCast :: Array2D Int32 Int32 -> Int32 -> Int32 -> Float -> Surface -> [Surface] -> IO ()              
-floorCast world px py angle surf texture = 
-    sequence_ [floorCastColumn world px py angle surf texture col
-               | col <- [0..windowWidth-1]]
-      
--- Approach to try next is to draw line by line  
--- This draws column by column
---  + a Hack to draw ceilings as well. 
--- TODO: Right now this completely ignores the map passed in
-floorCastColumn :: Array2D Int32 Int32 -> Int32 -> Int32 -> Float -> Surface -> [Surface] -> Int32 -> IO ()
-floorCastColumn world px py angle surf tex col = 
-  do 
-    pixels <- castPtr `fmap` surfaceGetPixels surf 
-    texels <- mapM (\s -> do ptr <- surfaceGetPixels s; return (castPtr ptr)) tex
-       
-    sequence_ [renderPoint texels pixels r col xyd  
-               | (r,xyd)<- zip rows ps]  
-  where 
-    radians = angle + columnAngle
-    columnAngle = atan (fromIntegral (col - viewportCenterX) / fromIntegral viewDistance)
-    rows = [viewportCenterY+1..windowHeight-1]              
 
-
-    ps = [(fromIntegral px - distance * sin radians 
-          ,fromIntegral py + distance * cos radians,distance )
-         | r <- rows
-         , let distance = rowDistance r] 
-    
-    ratioHeightRow row = fromIntegral viewerHeight / fromIntegral (row - viewportCenterY) 
-                         
-    
-    rowDistance row = ratioHeightRow row * fromIntegral viewDistance / cos columnAngle
-         
-    renderPoint :: [Ptr Word32] -> Ptr Word32 -> Int32 -> Int32 -> (Float,Float,Float) -> IO ()      
-    renderPoint tex surf row col (x,y,dist) = 
-      do 
-        -- Read one Word32 instead of 4 word8
-        -- why does this produce visibly ok results with "mod 16" ?? 
-        -- The mod 16 kicks in when floor outside of the map is being "cast"
-        let (tx,ty) = (floori_ x `div` wallWidth `mod` 16, floori_ y `div` wallWidth `mod` 16) 
-        
-        
-        
-        p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
-        
-        let i = (min 1.0 (lightRadius/dist)) 
-        let p0  = p .&. 255 
-            p1  = p `shiftR` 8 .&. 255 
-            p2  = p `shiftR` 16 .&. 255 
-            -- p3  = p `shiftR` 24 .&. 255 
-            p0' =  floor_ $ i * (fromIntegral p0) 
-            p1' =  floor_ $ i * (fromIntegral p1) 
-            p2' =  floor_ $ i * (fromIntegral p2) 
-                                
-            p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
-        
-        pokeElemOff surf (fromIntegral r)  p'     -- floor... 
-        pokeElemOff surf (fromIntegral r2) p'     -- ceiling...   
-        
-        where 
-          t  = ((floori_ y .&. modMask) * textureWidth + (floori_ x .&. modMask))
-          r  = (row * windowWidth + col)
-          r2 = ((windowHeight-row) * windowWidth + col )
-    
--} 
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
@@ -315,9 +247,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   -- draw all the visible walls
   -- floorCast  testLevelFloorArr x y r screen floorTextures
   
-  fillRect screen 
-           (Just (Rect 0 0 800 600)) 
-           =<< mapRGB pf 2 2 2 
+  
   let lights = ([Light (x,y) (0.5,0.5,0.5)] ++ 
                          [Light ((i+5)*256+128,(j+1)*256+128) (0.0,0.02,0.0) 
                          | i <- [0..1], j <- [0..10]])
@@ -331,13 +261,14 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   
   let dists  = map sliceDistance slices 
   
-  let monsterTfrmd = map (viewTransformSprite vc lights ((x,y),r)) monster    
-      monsterTfrmd' = sortRItems (catMaybes monsterTfrmd) 
+  let monsterTfrmd = sortRItems $ 
+                     catMaybes $ 
+                     map (viewTransformSprite vc lights ((x,y),r)) monster    
   
   -- sort monsters or update the zbuffer. (probably stick to sort) 
       
   withZBuffer dists (\zbuf -> 
-                      sequence_ $ map (renderRItem screen zbuf) monsterTfrmd' 
+                      sequence_ $ map (renderRItem screen zbuf) monsterTfrmd
                     )
   
   SDL.flip screen
