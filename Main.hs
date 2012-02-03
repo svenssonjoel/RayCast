@@ -103,12 +103,12 @@ walkSpeed      = 32
 ----------------------------------------------------------------------------      
 -- Cast for floors 
 -- The slices are just there to be able to make some optimisations.              
-newFloorCast :: ViewConfig -> MapType -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
-newFloorCast vc world pos angle slices textures surf =              
-  zipWithM_ (newFloorCastColumn vc world pos angle textures surf) slices [0..vcWindowWidth vc -1]
+newFloorCast :: ViewConfig -> MapType -> [Light] -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
+newFloorCast vc world lights pos angle slices textures surf =              
+  zipWithM_ (newFloorCastColumn vc world lights pos angle textures surf) slices [0..vcWindowWidth vc -1]
              
-newFloorCastColumn :: ViewConfig -> MapType -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
-newFloorCastColumn vc world (px,py) angle tex surf slice col = 
+newFloorCastColumn :: ViewConfig -> MapType -> [Light] -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
+newFloorCastColumn vc world lights (px,py) angle tex surf slice col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
     texels <- mapM ((return . castPtr) <=< surfaceGetPixels) tex
@@ -116,6 +116,7 @@ newFloorCastColumn vc world (px,py) angle tex surf slice col =
     sequence_ [renderPoint texels pixels r col xyd  
                | (r,xyd)<- zip rows ps]  
   where 
+    -- compute light 
     radians = angle - columnAngle
     columnAngle = atan (fromIntegral (col - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
     
@@ -141,14 +142,17 @@ newFloorCastColumn vc world (px,py) angle tex surf slice col =
         
         p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
         
-        let i = (min 1.0 (32768/(dist*dist))) 
+        let (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (floori_ x,
+                                                                                       floori_ y))  lights)
+   
+        -- let i = (min 1.0 (32768/(dist*dist))) 
         let p0  = p .&. 255 
             p1  = p `shiftR` 8 .&. 255 
             p2  = p `shiftR` 16 .&. 255 
             -- p3  = p `shiftR` 24 .&. 255 
-            p0' =  floor_ $ i * (fromIntegral p0) 
-            p1' =  floor_ $ i * (fromIntegral p1) 
-            p2' =  floor_ $ i * (fromIntegral p2) 
+            p0' =  floor_ $ inB * (fromIntegral p0) 
+            p1' =  floor_ $ inG * (fromIntegral p1) 
+            p2' =  floor_ $ inR * (fromIntegral p2) 
                                 
             p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
         
@@ -217,7 +221,7 @@ main = do
   let monsterSprite = [Sprite ((x+5)*256+128,(y+1)*256+128)
                               0
                               (256,256) 
-                              monster | x <- [0..10], y <- [0..10]] 
+                              monster | x <- [0..1], y <- [0]] 
                    
   
                  
@@ -249,15 +253,15 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   
   
   let lights = ([Light (x,y) (0.5,0.5,0.5)] ++ 
-                         [Light ((i+5)*256+128,(j+1)*256+128) (0.0,0.02,0.0) 
-                         | i <- [0..1], j <- [0..10]])
+                         [Light ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
+                         | i <- [0..1], j <- [0]])
   slices <- renderWalls vc 
                         testLevelArr 
                         lights 
                         ((x,y),r) 
                         wallTextures 
                         screen
-  newFloorCast vc testLevelFloorArr (x,y) r slices floorTextures screen
+  newFloorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
   
   let dists  = map sliceDistance slices 
   
