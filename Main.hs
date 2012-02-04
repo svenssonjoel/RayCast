@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-} 
 {- 
   2012 Joel Svensson   
 
@@ -102,13 +103,98 @@ walkSpeed      = 32
     
 ----------------------------------------------------------------------------      
 -- Cast for floors 
+newFloorCast :: ViewConfig 
+                -> MapType 
+                -> [Light] 
+                -> [Slice] 
+                -> View 
+                -> [Surface] 
+                -> Surface 
+                -> IO ()
+newFloorCast vc world lights slices (pos,angle) textures surf = 
+  do 
+    -- putStrLn $ show (zip yValues edges)
+               --show leftIntersects ++ "\n" ++ 
+               --show rightIntersects ++  "\n" ++ 
+               --show (length yValues)
+    mapM_ (lerpRow vc world lights slices textures surf) (zip yValues edges) 
+               
+  where 
+    edges = zip leftIntersects rightIntersects 
+    leftIntersects  = map (newFloorCastPoint vc world (pos,angle) x1) yValues
+    rightIntersects = map (newFloorCastPoint vc world (pos,angle) x2) yValues 
+    
+    
+    yValues = [y+viewportCenterY vc| y <- [0..(viewportCenterY vc-1)]]
+    x1 = 0;
+    x2 = vcWindowWidth vc - 1 
+    
+lerpRow :: ViewConfig -> MapType -> [Light] -> [Slice] -> [Surface] -> Surface -> (Int32,((Float,Float),(Float,Float))) -> IO () 
+lerpRow vc world lights slices textures surf (y,(p1,p2)) = 
+  do 
+    sp <- castPtr `fmap` surfaceGetPixels surf
+    sequence_ [do 
+                  let p = 0xFFFFFFFF :: Word32 
+                  let (inx,iny) = (fromIntegral (floori_ (fromIntegral xi * rX+(fst p1))),
+                                   fromIntegral (floori_ (fromIntegral xi * rY+(snd p1)))) 
+                      (wx,wy) = ((inx `div` wallWidth vc) `mod` 16, 
+                                 (iny `div` wallWidth vc) `mod` 16) 
+                      (tx,ty) = (inx .&. modMask vc,
+                                 iny .&. modMask vc)
+                      t       = tx + ty * fromIntegral (surfaceGetWidth tex)
+                      tix     = fromIntegral (world !! (wx,wy))
+                      tex     = (textures  P.!! tix ) 
+                      (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (inx,iny))  lights)
+                  -- putStrLn $ show (wx,wy)     
+                  tp <- castPtr `fmap` surfaceGetPixels tex
+                  (p :: Word32) <- peekElemOff tp (fromIntegral t)  
+                  let p0  = p .&. 255 
+                      p1  = p `shiftR` 8 .&. 255 
+                      p2  = p `shiftR` 16 .&. 255 
+                      -- p3  = p `shiftR` 24 .&. 255 
+                      p0' =  floor_ $ inB * (fromIntegral p0) 
+                      p1' =  floor_ $ inG * (fromIntegral p1) 
+                      p2' =  floor_ $ inR * (fromIntegral p2) 
+                                
+                      p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
+        
+                  pokeElemOff sp (fromIntegral (xi+y*width)) p'     -- floor... 
+              |xi <- [0..width-1]]
+    
+  where 
+    
+    rX = (fst p2 - fst p1) / fromIntegral width
+    rY = (snd p2 - snd p1) / fromIntegral width
+    width = vcWindowWidth vc
+    x1 = 0; 
+    
+
+newFloorCastPoint vc world (pos,angle) x y = 
+  ps
+  where 
+    radians = angle - columnAngle
+    columnAngle = atan (fromIntegral (x {-column-} - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
+    
+    ps = (fromIntegral (fst pos) - distance * sin radians
+         ,fromIntegral (snd pos) + distance * cos radians)
+    
+    distance = rowDistance y 
+    
+    ratioHeightRow row = 128 {-fromIntegral viewerHeight-} / fromIntegral (row - viewportCenterY vc) 
+                         
+    
+    rowDistance row = ratioHeightRow row * fromIntegral (vcViewDistance vc) / cos columnAngle
+    
+
+
+
 -- The slices are just there to be able to make some optimisations.              
-newFloorCast :: ViewConfig -> MapType -> [Light] -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
-newFloorCast vc world lights pos angle slices textures surf =              
-  zipWithM_ (newFloorCastColumn vc world lights pos angle textures surf) slices [0..vcWindowWidth vc -1]
+floorCast :: ViewConfig -> MapType -> [Light] -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
+floorCast vc world lights pos angle slices textures surf =              
+  zipWithM_ (floorCastColumn vc world lights pos angle textures surf) slices [0..vcWindowWidth vc -1]
              
-newFloorCastColumn :: ViewConfig -> MapType -> [Light] -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
-newFloorCastColumn vc world lights (px,py) angle tex surf slice col = 
+floorCastColumn :: ViewConfig -> MapType -> [Light] -> Point2D -> Float -> [Surface] -> Surface -> Slice -> Int32 -> IO ()
+floorCastColumn vc world lights (px,py) angle tex surf slice col = 
   do 
     pixels <- castPtr `fmap` surfaceGetPixels surf 
     texels <- mapM ((return . castPtr) <=< surfaceGetPixels) tex
@@ -255,13 +341,19 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   let lights = ([Light (x,y) (0.5,0.5,0.5)] ++ 
                          [Light ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
                          | i <- [0..1], j <- [0]])
+               
+  pix <- mapRGB pf 8 16 8 
+  fillRect screen (Just (Rect 0 0 800 300)) pix
+      
+  newFloorCast vc testLevelFloorArr lights []{-slices-} ((x,y),r) floorTextures screen             
   slices <- renderWalls vc 
                         testLevelArr 
                         lights 
                         ((x,y),r) 
                         wallTextures 
                         screen
-  newFloorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
+  --floorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
+  
   
   let dists  = map sliceDistance slices 
   
