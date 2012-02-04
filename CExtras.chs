@@ -8,6 +8,8 @@ import Foreign.C.String
 import Foreign.ForeignPtr
 import Foreign.Storable hiding (sizeOf)
 import Foreign.Marshal.Array
+import Data.Word
+import Data.Int
 
 import Graphics.UI.SDL
 
@@ -68,3 +70,20 @@ withFloatArray xs = withArray (fmap realToFrac xs)
    realToFrac   `Float' ,
    fromZBuffer  `ZBuffer' } -> `()' id #}
 
+
+-- void texPoint(int tx, int ty, int tw, int32_t *text,
+--              int x, int y, int w, int32_t *surf, 
+--	      float inR, float inG, float inB){
+
+{# fun unsafe texPoint as texPointC 
+   { fromIntegral `Int32' , 
+     fromIntegral `Int32' , 
+     fromIntegral `Int32' , 
+     id           `Ptr CInt' ,
+     fromIntegral `Int32' , 
+     fromIntegral `Int32' , 
+     fromIntegral `Int32' ,
+     id           `Ptr CInt' ,
+     realToFrac   `Float' , 
+     realToFrac   `Float' , 
+     realToFrac   `Float' } -> `()' id #}

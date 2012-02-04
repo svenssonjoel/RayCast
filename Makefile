@@ -9,8 +9,12 @@ ENGINEFILES = ./Engine/Math.hs \
 all: main
 
 
-main: Main.hs SDLUtils.hs CExtras.hs MathExtras.hs cExtras.c $(ENGINEFILES) 		
-	ghc Main.hs cExtras.c -o main -O3  -lm 
+main: Main.hs SDLUtils.hs CExtras.hs MathExtras.hs cExtras.o $(ENGINEFILES) 		
+	ghc Main.hs cExtras.o -o main -O3  -lm 
+
+cExtras.o :: cExtras.c 
+	gcc -Wall -c cExtras.c -o cExtras.o -O3 -funroll-all-loops -frerun-cse-after-loop
+
 
 CExtras.hs: CExtras.chs 
 	c2hs CExtras.chs

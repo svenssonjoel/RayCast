@@ -151,6 +151,66 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
 }
 
 
+void texPoint(int tx, int ty, int tw, int32_t *text,
+              int x, int y, int w, int32_t *surf, 
+	      float inR, float inG, float inB){
+
+  int32_t p = text[tx+ty*tw];
+  unsigned char *p_ = (unsigned char*)&p; 
+  p_[0] *= inB;
+  p_[1] *= inG;
+  p_[2] *= inR; 
+  surf[x+y*w] = p; 
+
+}
+//void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
+//		      int xt, int yt0, int yt1, SDL_Surface *text, 
+//		      float intensityR, 
+//		      float intensityG,
+//		      float intensityB) {
+
+
+/*
+lerpRow :: ViewConfig -> MapType -> [Light] -> [Slice] -> [Surface] -> Surface -> Int32 -> ((Float,Float),(Float,Float)) -> IO () 
+lerpRow vc world lights slices textures surf y (p1,p2) = 
+  do 
+    sp <- castPtr `fmap` surfaceGetPixels surf
+    sequence_ [do 
+                  let (inx,iny) = (fromIntegral (floori_ (fromIntegral xi * rX+(fst p1))),
+                                   fromIntegral (floori_ (fromIntegral xi * rY+(snd p1)))) 
+                      (wx,wy) = ((inx `div` wallWidth vc) `mod` 16, 
+                                 (iny `div` wallWidth vc) `mod` 16) 
+                      (tx,ty) = (inx .&. modMask vc,
+                                 iny .&. modMask vc)
+                      t       = tx + ty * fromIntegral (surfaceGetWidth tex)
+                      tix     = fromIntegral (world !! (wx,wy))
+                      tex     = (textures  P.!! tix ) 
+                      (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (inx,iny))  lights)
+                  -- putStrLn $ show (wx,wy)     
+                  tp <- castPtr `fmap` surfaceGetPixels tex
+                  (p :: Word32) <- peekElemOff tp (fromIntegral t)  
+                  let p0  = p .&. 255 
+                      p1  = p `shiftR` 8 .&. 255 
+                      p2  = p `shiftR` 16 .&. 255 
+                      -- p3  = p `shiftR` 24 .&. 255 
+                      p0' =  floor_ $ inB * (fromIntegral p0) 
+                      p1' =  floor_ $ inG * (fromIntegral p1) 
+                      p2' =  floor_ $ inR * (fromIntegral p2) 
+                                
+                      p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
+        
+                  pokeElemOff sp (fromIntegral (xi+y*width)) p'     -- floor... 
+              | xi <- [0..width-1]]
+    
+  where 
+    
+    rX = (fst p2 - fst p1) / fromIntegral width
+    rY = (snd p2 - snd p1) / fromIntegral width
+    width = vcWindowWidth vc
+    x1 = 0; 
+    
+*/ 
+
 
 
 /* Textured vertical line that borrows ideas from http://lodev.org/cgtutor/raycasting.html */

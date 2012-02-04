@@ -17,3 +17,6 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf,
                  float inB, 
 		 float depth, float *depths);
   
+ void texPoint(int tx, int ty, int tw, int32_t *text,
+               int x, int y, int w, int32_t *surf, 
+               float inR, float inG, float inB); 
