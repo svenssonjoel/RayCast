@@ -90,10 +90,10 @@ testFloor = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --0
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]  --15
             ]
 
-testLevelArr :: MapType -- Array2D Int32 Int32 
-testLevelArr = listMap (16,16)  testLevel
+testLevelArr :: MapType
+testLevelArr = listMap (16,16) testLevel
 
-testLevelFloorArr :: MapType -- Array2D Int32 Int32 
+testLevelFloorArr :: MapType 
 testLevelFloorArr = listMap (16,16) testFloor
 
 
@@ -107,8 +107,8 @@ walkSpeed      = 32
 -- Cast for floors 
 newFloorCast :: ViewConfig 
                 -> MapType 
-                -> [Light] 
-                -> [Slice] 
+                -> [Light]
+                -> Array Int Int32
                 -> View 
                 -> [Surface] 
                 -> Surface 
@@ -133,7 +133,7 @@ newFloorCast vc world lights slices view textures surf =
     x1 = 0;
     x2 = vcWindowWidth vc - 1 
     
-lerpRow :: ViewConfig -> MapType -> [Light] -> [Slice] -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO () 
+lerpRow :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO () 
 lerpRow vc world lights slices tps surf (y,(p1,p2)) = 
   do 
     sp <- castPtr `fmap` surfaceGetPixels surf
@@ -150,8 +150,15 @@ lerpRow vc world lights slices tps surf (y,(p1,p2)) =
                       (inR,inG,inB) = clamp 1.0 $ foldl1 vec3add (map (lightContribution (inx,iny))  lights)
                  
                   
-                  -- Didnt improve much. 
-                  texPointC tx ty w tp xi y width sp inR inG inB
+                
+                  if (slices ! (fromIntegral xi) <= y)     
+                     -- speeds up quite a bit when not much floor is visible
+                    then 
+                     do 
+                      texPointC tx ty w tp xi y width sp inR inG inB
+                      texPointC tx ty w tp xi (vcWindowHeight vc - y) width sp inR inG inB
+                    else 
+                      return () 
                   {- 
                   (p :: Word32) <- peekElemOff tp (fromIntegral t)  
                   let p0  = p .&. 255 
@@ -314,7 +321,7 @@ main = do
   let monsterSprite = [Sprite ((x+5)*256+128,(y+1)*256+128)
                               0
                               (256,256) 
-                              monster | x <- [0..1], y <- [0]] 
+                              monster | x <- [0..10], y <- [0]] 
                    
   
                  
@@ -342,24 +349,28 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   let pf = surfaceGetPixelFormat screen
   
   let lights = ([Light (x,y) (0.5,0.5,0.5)] ++ 
-                         [Light ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
-                         | i <- [0..1], j <- [0]])
+                [Light ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
+                | i <- [0..10], j <- [0]])
+
                
-  pix <- mapRGB pf 8 16 8 
-  fillRect screen (Just (Rect 0 0 800 300)) pix
+  pix <- mapRGB pf 8 8 8 
+  fillRect screen (Just (Rect 0 0 800 600)) pix
   -- fillRect screen (Just (Rect 0 300 800 600)) pix
       
-  newFloorCast vc testLevelFloorArr lights []{-slices-} ((x,y),r) floorTextures screen             
+  
   slices <- renderWalls vc 
                         testLevelArr 
                         lights 
                         ((x,y),r) 
                         wallTextures 
                         screen
+                        
+  let slices' = listArray (0,length slices - 1) (map sliceBot slices)
+  newFloorCast vc testLevelFloorArr lights slices' ((x,y),r) floorTextures screen                                     
   --floorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
   
   
-  let dists  = map sliceDistance slices 
+  let dists  = map sliceDistance slices
   
   let monsterTfrmd = sortRItems $ 
                      catMaybes $ 
