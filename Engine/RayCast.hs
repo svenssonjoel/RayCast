@@ -19,6 +19,8 @@ import Prelude hiding ((!!))
 import Data.Array.MArray
 import Data.Array.Storable
 
+import CExtras
+
 ----------------------------------------------------------------------------
 -- ViewConfiguration
 
@@ -58,34 +60,6 @@ data Slice = Slice {sliceTop :: Int32,
 type View = (Point2D, Angle) 
 
 
-data Light = Light Point2D (Float,Float,Float) -- intensities. 
-
-instance Storable Light where 
-  sizeOf (Light (x,y) (r,g,b)) = sizeOf x + 
-                                 sizeOf y + 
-                                 sizeOf r + 
-                                 sizeOf g + 
-                                 sizeOf b 
-  alignment a = 0 -- ? 
-  --peekByteOff :: Ptr b -> Int -> IO a
-  peekElemOff ptl offs = 
-    do
-      (x :: Int32) <- peekElemOff (castPtr ptl) offs  
-      (y :: Int32) <- peekElemOff (castPtr ptl) (offs + sizeOf x) 
-      (r :: Float) <- peekElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y)
-      (g :: Float) <- peekElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r)
-      (b :: Float) <- peekElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r + sizeOf g) 
-      
-      return (Light (x,y) (r,g,b)) 
-  --pokeElemOff :: Ptr a -> Int -> a -> IO ()     
-  pokeElemOff ptl offs (Light (x,y) (r,g,b)) = 
-    do 
-      pokeElemOff (castPtr ptl) offs x 
-      pokeElemOff (castPtr ptl) (offs + sizeOf x) y
-      pokeElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y) r
-      pokeElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r) g 
-      pokeElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r + sizeOf g) b
-
 
 ----------------------------------------------------------------------------
 -- raycasting  
@@ -124,7 +98,7 @@ castRay vc world lights (pos,angle) column =
 --    (dist', texValue, texCol,(inR,inG,inB)) = castRay2 vc world lights 0.0 ray 
     
    
-lightContribution (px,py) (Light (lx,ly) (inR',inG',inB')) = (inR,inG,inB)    
+lightContribution (px,py) (Light  lx ly   inR' inG' inB' ) = (inR,inG,inB)    
   where
     -- How to really compute light contribution? 
     lightdist = (distance (px,py) (lx,ly) / 256) 

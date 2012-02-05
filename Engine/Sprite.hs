@@ -9,6 +9,7 @@ import Engine.Math
 import Engine.RItem
 
 import MathExtras
+import CExtras
 
 ----------------------------------------------------------------------------
 -- Sprites 

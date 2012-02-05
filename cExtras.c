@@ -8,7 +8,9 @@
 
 #include <SDL/SDL.h> 
 
-// #include <stdio.h>
+#include <stdio.h>
+#include "cExtras.h"
+
 
 /* -----------------------------------------------------------------------------
 
@@ -20,7 +22,7 @@ void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
   int y; 
   int sh = surf->h; 
   int sw = surf->w;
-  int th = text->h;
+  // int th = text->h;
   int clipped_y1 = y0 > 0 ? y0 : 0;
   int clipped_y2 = y1 < sh ? y1 : sh;
  
@@ -54,7 +56,7 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
   int y; 
   int sh = surf->h; 
   int sw = surf->w;
-  int th = text->h;
+  // int th = text->h;
   int clipped_y1 = y0 > 0 ? y0 : 0;
   int clipped_y2 = y1 < sh ? y1 : sh;
  
@@ -163,31 +165,117 @@ void texPoint(int tx, int ty, int tw, int32_t *text,
   surf[x+y*w] = p; 
 
 }
+
 //void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
 //		      int xt, int yt0, int yt1, SDL_Surface *text, 
 //		      float intensityR, 
 //		      float intensityG,
 //		      float intensityB) {
 
+void lerpRow(int32_t wallWidth, 
+	     int32_t modMask,
+	     int32_t windowWidth, // things from ViewConfig that matters to this fun
+	     
+	     int32_t mapW, 
+	     int32_t mapH, 
+	     int32_t *map,
+	     
+	     int32_t *bots,
+             int32_t **textures,
+	     SDL_Surface *surf,
+	     light *lights, 
+	     int32_t num_lights,
+	     
+	     int32_t y,
+	     float   p1x, float p1y, 
+	     float   p2x, float p2y) {
 
-/*
-lerpRow :: ViewConfig -> MapType -> [Light] -> [Slice] -> [Surface] -> Surface -> Int32 -> ((Float,Float),(Float,Float)) -> IO () 
-lerpRow vc world lights slices textures surf y (p1,p2) = 
+
+  int32_t *sp = (int32_t*)surf->pixels;
+
+  float rx = (float)(p2x - p1x) / (float)windowWidth;
+  float ry = (float)(p2y - p1y) / (float)windowWidth; 
+  int xi;
+
+  for (xi = 0; xi < windowWidth; ++xi) { 
+    if (bots[xi] > y) continue;
+    int32_t inx = (int32_t)(xi * rx + p1x);
+    int32_t iny = (int32_t)(xi * ry + p1y);
+    
+    int32_t wx = (inx / wallWidth) & 15; // something other than 15 might occur!! 
+    int32_t wy = (iny / wallWidth) & 15;
+    
+    int32_t tx = inx & modMask;
+    int32_t ty = iny & modMask;
+    
+    int32_t  ti = map[wx  + wy * 16]; 
+    int32_t* tp = textures[ti];
+    
+    float inR = 0.0;
+    float inG = 0.0;
+    float inB = 0.0; 
+    int l;
+    for (l = 0; l < num_lights; l++) {
+      
+      float xd = lights[l].lx - inx;
+      float yd = lights[l].ly - iny;
+      double dist = sqrt (xd*xd + yd*yd) / 256;
+      double ld = 1 / fmax(0.01,(dist*dist));
+      inR += fmin(1.0, lights[l].inR * ld); 
+      inG += fmin(1.0, lights[l].inG * ld); 
+      inB += fmin(1.0, lights[l].inB * ld); 
+	
+    } 
+    inR = fmin(1.0,inR);
+    inG = fmin(1.0,inG);
+    inB = fmin(1.0,inB);
+    
+    
+    texPoint(tx,ty,256,tp,
+	     xi,y,windowWidth,sp,
+	     inR,inG,inB);
+    texPoint(tx,ty,256,tp,
+	     xi,600-y,windowWidth,sp,
+	     inR,inG,inB);
+  }
+      
+
+
+}
+	     
+
+	     
+
+/* 
+lerpRow :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO () 
+lerpRow vc world lights slices tps surf (y,(p1,p2)) = 
   do 
     sp <- castPtr `fmap` surfaceGetPixels surf
     sequence_ [do 
-                  let (inx,iny) = (fromIntegral (floori_ (fromIntegral xi * rX+(fst p1))),
-                                   fromIntegral (floori_ (fromIntegral xi * rY+(snd p1)))) 
-                      (wx,wy) = ((inx `div` wallWidth vc) `mod` 16, 
-                                 (iny `div` wallWidth vc) `mod` 16) 
+                  let (inx,iny) = ((floori_ (fromIntegral xi * rX+(fst p1))),
+                                   (floori_ (fromIntegral xi * rY+(snd p1)))) 
+                      (inR,inG,inB) = clamp 1.0 $ foldl1 vec3add (map (lightContribution (inx,iny))  lights)
+                      (wx,wy) = ((inx `div` wallWidth vc) .&. 15, 
+                                 (iny `div` wallWidth vc) .&. 15) 
                       (tx,ty) = (inx .&. modMask vc,
                                  iny .&. modMask vc)
-                      t       = tx + ty * fromIntegral (surfaceGetWidth tex)
-                      tix     = fromIntegral (world !! (wx,wy))
-                      tex     = (textures  P.!! tix ) 
-                      (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (inx,iny))  lights)
-                  -- putStrLn $ show (wx,wy)     
-                  tp <- castPtr `fmap` surfaceGetPixels tex
+                      
+                  -- texture mapping    
+                  tix  <- fmap fromIntegral (world !! (wx,wy))
+                  let (tp,w) = (tps  ! tix ) 
+                      t      = tx + ty * (fromIntegral w) -- fromIntegral (surfaceGetWidth tex)   
+                 
+                  
+                
+                  if (slices ! (fromIntegral xi) <= y)     
+                     -- speeds up quite a bit when not much floor is visible
+                    then 
+                     do 
+                      texPointC tx ty w tp xi y width sp inR inG inB
+                      texPointC tx ty w tp xi (vcWindowHeight vc - y) width sp inR inG inB
+                    else 
+                      return () 
+                  {- 
                   (p :: Word32) <- peekElemOff tp (fromIntegral t)  
                   let p0  = p .&. 255 
                       p1  = p `shiftR` 8 .&. 255 
@@ -197,9 +285,9 @@ lerpRow vc world lights slices textures surf y (p1,p2) =
                       p1' =  floor_ $ inG * (fromIntegral p1) 
                       p2' =  floor_ $ inR * (fromIntegral p2) 
                                 
-                      p'  = p0' + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
-        
+                      p'  = p0' -- + (p1' `shiftL` 8) + (p2' `shiftL` 16)  -- + (p3' `shiftL` 24)
                   pokeElemOff sp (fromIntegral (xi+y*width)) p'     -- floor... 
+                  -}
               | xi <- [0..width-1]]
     
   where 
@@ -208,10 +296,7 @@ lerpRow vc world lights slices textures surf y (p1,p2) =
     rY = (snd p2 - snd p1) / fromIntegral width
     width = vcWindowWidth vc
     x1 = 0; 
-    
-*/ 
-
-
+*/
 
 /* Textured vertical line that borrows ideas from http://lodev.org/cgtutor/raycasting.html */
 /*   

@@ -1,4 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables #-} 
+{-# LANGUAGE ScopedTypeVariables, 
+             FlexibleContexts#-} 
 {- 
   2012 Joel Svensson   
 
@@ -7,6 +8,7 @@
 
   This is an attempt to Haskellify the code from 
   Christopher Lamptons Book "Gardens of Imagination"  
+   
 
   **************************************
   This is also an exercise in using SDL. 
@@ -37,6 +39,7 @@ import Engine.ZBuffer
 
 import Control.Monad
 import Data.Array
+import Data.Array.Storable
 import Data.Maybe
 
 import Data.Word
@@ -117,14 +120,11 @@ newFloorCast :: ViewConfig
                 -> IO ()
 newFloorCast vc world lights slices view textures surf = 
   do 
-    -- putStrLn $ show (zip yValues edges)
-               --show leftIntersects ++ "\n" ++ 
-               --show rightIntersects ++  "\n" ++ 
-               --show (length yValues)
+    
     tps' <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
     let tps = listArray (0,length textures - 1) tps' 
 
-    mapM_ (lerpRow vc world lights slices tps surf)  edges
+    mapM_ (lerpRow_ vc world lights slices tps surf)  edges
                
   where 
     edges = [
@@ -134,6 +134,25 @@ newFloorCast vc world lights slices view textures surf =
     
     x1 = 0;
     x2 = vcWindowWidth vc - 1 
+    
+lerpRow_ :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO ()     
+lerpRow_ vc (Array2D _ world) lights slices tps surf (y,(p1,p2)) = 
+  withStorableArray world $ \wmap -> 
+    withArray (elems slices) $ \ slices' -> 
+      withArray (map fst (elems tps)) $ \ tps' -> 
+        withArray lights $ \ lights' -> 
+         lerpRowC (wallWidth vc) (modMask vc) (vcWindowWidth vc)
+                  16 16 (castPtr wmap)
+                  (castPtr slices') 
+                  (castPtr tps') 
+                  surf
+                  (castPtr lights')                  
+                  (fromIntegral (length lights))
+                  y
+                  (fst p1) (snd p1)
+                  (fst p2) (snd p2)
+             
+    
     
 lerpRow :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO () 
 lerpRow vc world lights slices tps surf (y,(p1,p2)) = 
@@ -148,7 +167,7 @@ lerpRow vc world lights slices tps surf (y,(p1,p2)) =
                       (tx,ty) = (inx .&. modMask vc,
                                  iny .&. modMask vc)
                       
-                      
+                  -- texture mapping    
                   tix  <- fmap fromIntegral (world !! (wx,wy))
                   let (tp,w) = (tps  ! tix ) 
                       t      = tx + ty * (fromIntegral w) -- fromIntegral (surfaceGetWidth tex)   
@@ -353,13 +372,13 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   
   let pf = surfaceGetPixelFormat screen
   
-  let lights = ([Light (x,y) (0.5,0.5,0.5)] ++ 
-                [Light ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
+  let lights = ([mkLight (x,y) (0.5,0.5,0.5)] ++ 
+                [mkLight ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
                 | i <- [0..10], j <- [0]])
 
                
-  pix <- mapRGB pf 8 8 8 
-  fillRect screen (Just (Rect 0 0 800 600)) pix
+  -- pix <- mapRGB pf 8 8 8 
+  -- fillRect screen (Just (Rect 0 0 800 600)) pix
   -- fillRect screen (Just (Rect 0 300 800 600)) pix
       
   
@@ -413,7 +432,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
           Quit -> (up,down,left,right,True) 
           otherwise -> (up,down,left,right,False)
   
-  let (r',x',y') = (r,x,y) -- (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
+  (r',x',y') <- (moveLeft left' >=> moveRight right' >=> moveUp up' >=> moveDown down') (r,x,y) 
 
   unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',x',y')     
   
@@ -421,19 +440,31 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   -- very crude colision against walls added
   where 
     a = 3
-    {-
-    moveLeft  b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
-    moveRight b (r,x,y) = if b then (r-0.04,x,y) else (r,x,y) 
-    moveUp    b (r,x,y) = do if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
+    moveLeft :: Monad m => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveLeft  b (r,x,y) = return $ if b then (r+0.04,x,y) else (r,x,y) 
+    moveRight :: Monad m => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveRight b (r,x,y) = return $ if b then (r-0.04,x,y) else (r,x,y) 
+    
+    moveUp :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveUp    b (r,x,y) = 
+      do 
+        ma <- movementAllowed (x',y')
+        return $ if b && ma then (r,x',y')   else (r,x,y) 
       where 
         x' = x - (floori_ ((fromIntegral walkSpeed)*sin r))
         y' = y + (floori_ ((fromIntegral walkSpeed)*cos r))
-    moveDown  b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
+    moveDown :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveDown  b (r,x,y) = 
+      do 
+        ma <- movementAllowed (x',y')
+        return $ if b && ma  then (r,x',y')   else (r,x,y) 
       where 
         x' = x + (floori_ ((fromIntegral walkSpeed)*sin r))
         y' = y - (floori_ ((fromIntegral walkSpeed)*cos r))
+        
+    movementAllowed ::(MArray StorableArray Int32 m,  Monad m) => (Int32,Int32) -> m Bool    
     movementAllowed (px,py) = 
       do 
         value <- testLevelArr !! (px `div` wallWidth vc,py `div` wallWidth vc)
         return$ value == 0
-    -} 
+     
