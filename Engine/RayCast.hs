@@ -1,4 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, 
+             FlexibleContexts
+            #-}
 module Engine.RayCast where 
 
 
@@ -14,6 +16,8 @@ import Foreign.Storable
 import Foreign.Ptr
 
 import Prelude hiding ((!!)) 
+import Data.Array.MArray
+import Data.Array.Storable
 
 ----------------------------------------------------------------------------
 -- ViewConfiguration
@@ -86,24 +90,38 @@ instance Storable Light where
 ----------------------------------------------------------------------------
 -- raycasting  
 
-castRay :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> View -> Int32 -> Slice 
+castRay :: (MArray StorableArray Int32 m, Monad m)
+           => ViewConfig 
+           -> Array2D Int32 Int32 
+           -> [Light] 
+           -> View 
+           -> Int32 
+           -> m Slice 
 castRay vc world lights (pos,angle) column = 
-  Slice top 
-        bot 
-        texValue 
-        texCol 
-        -- (min 1.0 (32768 {-lightradius-}/(dist*dist))) 
-        inR inG inB 
-        dist 
+  do 
+  
+  let ray  = mkRay pos (angle - columnAngle)
+      columnAngle = atan $ fromIntegral col / fromIntegral (vcViewDistance vc)
+      col = column - viewportCenterX vc
+  
+      
+      
+  (dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights 0.0 ray   
+  let dist = dist' * cos columnAngle
+      height = floori_ $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
+      top  = bot - height 
+      bot  = floori_ $ fromIntegral (viewportCenterY vc) + (fromIntegral height / 2) 
+
+  return $ Slice top 
+                 bot 
+                 texValue 
+                 texCol 
+                 -- (min 1.0 (32768 {-lightradius-}/(dist*dist))) 
+                 inR inG inB 
+                 dist 
   where 
-    ray  = mkRay pos (angle - columnAngle)
-    columnAngle = atan $ fromIntegral col / fromIntegral (vcViewDistance vc)
-    top  = bot - height 
-    bot  = floori_ $ fromIntegral (viewportCenterY vc) + (fromIntegral height / 2) 
-    height = floori_ $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
-    dist = dist' * cos columnAngle
-    col = column - viewportCenterX vc
-    (dist', texValue, texCol,(inR,inG,inB)) = castRay2 vc world lights 0.0 ray 
+    
+--    (dist', texValue, texCol,(inR,inG,inB)) = castRay2 vc world lights 0.0 ray 
     
    
 lightContribution (px,py) (Light (lx,ly) (inR',inG',inB')) = (inR,inG,inB)    
@@ -120,13 +138,22 @@ clamp i (x,y,z) = (min x i, min y i, min z i)
 
 ----------------------------------------------------------------------------
 -- castRay2
-castRay2 :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> Float -> Ray  -> (Float,Int32,Int32,(Float,Float,Float))
+castRay2 :: (MArray StorableArray Int32 m, Monad m) 
+            => ViewConfig 
+            -> MapType 
+            -> [Light] 
+            -> Float 
+            -> Ray  
+            -> m (Float,Int32,Int32,(Float,Float,Float))
 castRay2 vc world lights accDist ray = 
-    if (value > 0) -- ray has struck solid wall
-    then (accDist+dist,value,offs,(inR,inG,inB)) 
-    else 
-      -- Continue along the ray 
-      castRay2 vc world lights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+    do 
+      value <- world !! (px `div` wallWidth vc, py `div` wallWidth vc)
+      if (value > 0) -- ray has struck solid wall
+        then 
+          return (accDist+dist,value,offs,(inR,inG,inB)) 
+        else 
+          -- Continue along the ray 
+          castRay2 vc world lights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
 
         
   where 
@@ -165,4 +192,4 @@ castRay2 vc world lights accDist ray =
           in if d1 < d2 
              then (p,d1,(snd p `mod` wallWidth vc) ) 
              else (q,d2,(fst q `mod` wallWidth vc) ) 
-    value = world !! (px `div` wallWidth vc, py `div` wallWidth vc)
+

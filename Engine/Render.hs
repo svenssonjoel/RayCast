@@ -29,10 +29,11 @@ import MathExtras
 renderWalls :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> View -> [Surface] -> Surface -> IO [Slice]
 renderWalls vc world lights (pos,angle) textures surf = 
   do 
+    slices <- mapM (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
     zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
     return slices
-  where 
-    slices = map (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
+   
+    
     
 drawSlice :: [Surface] -> Surface -> Int32 -> Slice -> IO () 
 drawSlice textures surf col slice = 

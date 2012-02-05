@@ -52,6 +52,8 @@ import Foreign.C.Types
 
 import CExtras
 import MathExtras
+
+import System.IO.Unsafe
 ----------------------------------------------------------------------------
 --
     
@@ -91,10 +93,10 @@ testFloor = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --0
             ]
 
 testLevelArr :: MapType
-testLevelArr = listMap (16,16) testLevel
+testLevelArr = unsafePerformIO$ listMap (16,16) testLevel
 
 testLevelFloorArr :: MapType 
-testLevelFloorArr = listMap (16,16) testFloor
+testLevelFloorArr = unsafePerformIO$ listMap (16,16) testFloor
 
 
 ----------------------------------------------------------------------------
@@ -140,14 +142,16 @@ lerpRow vc world lights slices tps surf (y,(p1,p2)) =
     sequence_ [do 
                   let (inx,iny) = ((floori_ (fromIntegral xi * rX+(fst p1))),
                                    (floori_ (fromIntegral xi * rY+(snd p1)))) 
+                      (inR,inG,inB) = clamp 1.0 $ foldl1 vec3add (map (lightContribution (inx,iny))  lights)
                       (wx,wy) = ((inx `div` wallWidth vc) .&. 15, 
                                  (iny `div` wallWidth vc) .&. 15) 
                       (tx,ty) = (inx .&. modMask vc,
                                  iny .&. modMask vc)
-                      t       = tx + ty * (fromIntegral w) -- fromIntegral (surfaceGetWidth tex)
-                      tix     = fromIntegral (world !! (wx,wy))
-                      (tp,w)    = (tps  ! tix ) 
-                      (inR,inG,inB) = clamp 1.0 $ foldl1 vec3add (map (lightContribution (inx,iny))  lights)
+                      
+                      
+                  tix  <- fmap fromIntegral (world !! (wx,wy))
+                  let (tp,w) = (tps  ! tix ) 
+                      t      = tx + ty * (fromIntegral w) -- fromIntegral (surfaceGetWidth tex)   
                  
                   
                 
@@ -240,7 +244,8 @@ floorCastColumn vc world lights (px,py) angle tex surf slice col =
       do 
         let (tx,ty) = (floori_ x `div` wallWidth vc, floori_ y `div` wallWidth vc) 
         
-        p  <- peekElemOff (tex P.!! (fromIntegral (world !! (tx,ty)))) (fromIntegral t) 
+        index <- fmap fromIntegral (world !! (tx,ty))
+        p  <- peekElemOff (tex P.!! index)  (fromIntegral t) 
         
         let (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (floori_ x,
                                                                                        floori_ y))  lights)
@@ -408,16 +413,18 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
           Quit -> (up,down,left,right,True) 
           otherwise -> (up,down,left,right,False)
   
-  let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
+  let (r',x',y') = (r,x,y) -- (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y) 
 
   unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',x',y')     
   
   
   -- very crude colision against walls added
   where 
+    a = 3
+    {-
     moveLeft  b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
     moveRight b (r,x,y) = if b then (r-0.04,x,y) else (r,x,y) 
-    moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
+    moveUp    b (r,x,y) = do if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
         x' = x - (floori_ ((fromIntegral walkSpeed)*sin r))
         y' = y + (floori_ ((fromIntegral walkSpeed)*cos r))
@@ -425,4 +432,8 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
       where 
         x' = x + (floori_ ((fromIntegral walkSpeed)*sin r))
         y' = y - (floori_ ((fromIntegral walkSpeed)*cos r))
-    movementAllowed (px,py) = testLevelArr !! (px `div` wallWidth vc,py `div` wallWidth vc) == 0
+    movementAllowed (px,py) = 
+      do 
+        value <- testLevelArr !! (px `div` wallWidth vc,py `div` wallWidth vc)
+        return$ value == 0
+    -} 
