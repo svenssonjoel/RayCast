@@ -49,3 +49,21 @@ void lerpRow(int32_t wallWidth,
 	     int32_t y,
 	     float   p1x, float p1y, 
 	     float   p2x, float p2y);
+
+
+void lerpRows(int32_t wallWidth, 
+	      int32_t modMask,
+	      int32_t windowWidth, // things from ViewConfig that matters to this fun
+	     
+	      int32_t mapW, 
+	      int32_t mapH, 
+	      int32_t *map,
+	     
+	      int32_t *bots,
+              int32_t **textures,
+	      SDL_Surface *surf,
+	      light *lights, 
+	      int32_t num_lights,
+	     
+	      float   *p1xa, float *p1ya, 
+	      float   *p2xa, float *p2ya);

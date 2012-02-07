@@ -244,6 +244,93 @@ void lerpRow(int32_t wallWidth,
 }
 	     
 
+void lerpRows(int32_t wallWidth, 
+	      int32_t modMask,
+	      int32_t windowWidth, // things from ViewConfig that matters to this fun
+	     
+	      int32_t mapW, 
+	      int32_t mapH, 
+	      int32_t *map,
+	     
+	      int32_t *bots,
+              int32_t **textures,
+	      SDL_Surface *surf,
+	      light *lights, 
+	      int32_t num_lights,
+	     
+	      float   *p1xa, float *p1ya, 
+	      float   *p2xa, float *p2ya) {
+
+
+  int32_t *sp = (int32_t*)surf->pixels;
+  int yi; //  = 300; 
+  for (yi = 0; yi < 300; ++yi){
+    int y = yi + 300;
+    
+    // precalc some 
+    int yww = y*windowWidth; 
+    int yww_ = (599-y)*windowWidth;
+
+    // the line being interpolated
+    float p1x = p1xa[yi];
+    float p1y = p1ya[yi];
+    float p2x = p2xa[yi]; 
+    float p2y = p2ya[yi];
+
+    float inR = 0.0;
+    float inG = 0.0;
+    float inB = 0.0; 
+    
+    // hardcoded 1/800
+    float rx = (float)(p2x - p1x) * 1.25e-3; // / (float)windowWidth;
+    float ry = (float)(p2y - p1y) * 1.25e-3; // / (float)windowWidth; 
+    int xi;
+  
+    for (xi = 0; xi < windowWidth; ++xi) { 
+      if (bots[xi] > y) continue;
+      int32_t inx = (int32_t)(xi * rx + p1x);
+      int32_t iny = (int32_t)(xi * ry + p1y);
+    
+      int32_t wx = (inx / wallWidth) & 15; // something other than 15 might occur!! 
+      int32_t wy = (iny / wallWidth) & 15;
+    
+      int32_t tx = inx & modMask;
+      int32_t ty = iny & modMask;
+    
+      int32_t  ti = map[wx + (wy << 4)]; // wy * 16 
+      int32_t* tp = textures[ti];
+
+      
+      inR = inG = inB = 0.0;
+      int l;
+      for (l = 0; l < num_lights; l++) {
+	float xd = lights[l].lx - inx;
+	float yd = lights[l].ly - iny;
+	double dist = sqrt (xd*xd + yd*yd);//  / 256;
+	double ld = 65536 / (dist*dist); // fmax(0.01,(dist*dist));
+	inR += lights[l].inR * ld; 
+	inG += lights[l].inG * ld; 
+	inB += lights[l].inB * ld; 
+      } 
+      inR = fmin(1.0,inR);
+      inG = fmin(1.0,inG);
+      inB = fmin(1.0,inB);
+    
+      
+      // inlined texPoint
+      int32_t p = tp[tx+(ty<<8)]; // ty * 256
+      unsigned char *p_ = (unsigned char*)&p; 
+      p_[0] *= inB;
+      p_[1] *= inG;
+      p_[2] *= inR; 
+      sp[xi+yww] = p;
+      sp[xi+yww_] = p;
+    }
+  }    
+}
+
+
+
 	     
 
 /* 

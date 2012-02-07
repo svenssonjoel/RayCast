@@ -200,6 +200,24 @@ void lerpRow(int32_t wallWidth,
     realToFrac   `Float' ,
     realToFrac   `Float' ,
     realToFrac   `Float' } -> `()' id #}
+
+
+{# fun unsafe lerpRows as lerpRowsC 
+  { fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    withMap*     `MapType' , 
+    withIntArray* `[Int32]' , 
+    withPixels*  `[Pixels]', 
+    convSurface* `Surface' ,
+    convLight*   `[Light]' ,
+    fromIntegral `Int32' , 
+    withFloatArray*   `[Float]' ,
+    withFloatArray*   `[Float]' ,
+    withFloatArray*   `[Float]' ,
+    withFloatArray*   `[Float]' } -> `()' id #}
     
     
     

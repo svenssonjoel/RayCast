@@ -148,6 +148,58 @@ lerpRow_ vc world lights slices tps surf (y,(p1,p2)) =
                   (fst p1) (snd p1)
                   (fst p2) (snd p2)
              
+newFloorCast2 :: ViewConfig 
+                 -> MapType 
+                 -> [Light]
+                 -> [Int32]
+                 -> View 
+                 -> [Surface] 
+                 -> Surface 
+                 -> IO ()
+newFloorCast2 vc world lights slices view textures surf = 
+  do 
+    
+    tps <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
+    lerpRows_ vc world lights slices tps surf x1s y1s x2s y2s 
+               
+  where 
+    -- TODO: Storable points. 
+    -- TODO: Storable Pairs of points. (lines)  
+    (x1s,y1s) = unzip edgeL
+    (x2s,y2s) = unzip edgeR
+    
+    edgeL = [newFloorCastPoint vc world view x1 y
+            | y <- [0..(viewportCenterY vc-1)]] 
+    edgeR = [newFloorCastPoint vc world view x2 y
+            | y <- [0..(viewportCenterY vc-1)]] 
+    
+    x1 = 0;
+    x2 = vcWindowWidth vc - 1 
+    
+lerpRows_ :: ViewConfig 
+             -> MapType 
+             -> [Light] 
+             -> [Int32] 
+             -> [(Pixels,Int32)] 
+             -> Surface 
+             -> [Float] 
+             -> [Float] 
+             -> [Float] 
+             -> [Float] 
+             -> IO ()     
+lerpRows_ vc world lights slices tps surf p1x p1y p2x p2y = 
+         lerpRowsC (wallWidth vc) (modMask vc) (vcWindowWidth vc)
+                  16 16 world 
+                  slices 
+                  (map fst tps) -- (castPtr tps') 
+                  surf
+                  lights                  
+                  (fromIntegral (length lights))
+                  p1x p1y
+                  p2x p2y
+
+
+
 newFloorCastPoint :: ViewConfig -> MapType -> View -> Int32 -> Int32 -> (Float,Float)    
 newFloorCastPoint vc world (pos,angle) x y = 
   ps
@@ -351,7 +403,8 @@ main = do
     monsterSprite
     (False,False,False,False) -- Keyboard state
     (0.0,256+128 ,256+128)
-  
+    0
+    
   quit
     where 
       conv pf t = convertSurface t pf []
@@ -365,13 +418,14 @@ eventLoop :: ViewConfig
              -> [Sprite]
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Int32, Int32) 
+             -> Int32
              -> IO ()
-eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x,y) = do 
+eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x,y) ly= do 
   
   let pf = surfaceGetPixelFormat screen
   
   let lights = ([mkLight (x,y) (0.5,0.5,0.5)] ++ 
-                [mkLight ((i+5)*256+128,(j+1)*256+128) (0.02,0.0,0.0) 
+                [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.02,0.02,0.02) 
                 | i <- [0..10], j <- [0]])
 
                
@@ -388,7 +442,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
                         screen
                         
 
-  newFloorCast vc testLevelFloorArr lights (map sliceBot slices) ((x,y),r) floorTextures screen                                     
+  newFloorCast2 vc testLevelFloorArr lights (map sliceBot slices) ((x,y),r) floorTextures screen                                     
   --floorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
   
   
@@ -432,7 +486,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   
   (r',x',y') <- (moveLeft left' >=> moveRight right' >=> moveUp up' >=> moveDown down') (r,x,y) 
 
-  unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',x',y')     
+  unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',x',y') ((ly + 128) `mod` 4096)    
   
   
   -- very crude colision against walls added
