@@ -28,6 +28,7 @@ module Main where
 import Prelude hiding ((!!))
 import qualified Prelude as P
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Types
 
 import Engine.RayCast
 import Engine.Math
@@ -113,7 +114,7 @@ walkSpeed      = 32
 newFloorCast :: ViewConfig 
                 -> MapType 
                 -> [Light]
-                -> Array Int Int32
+                -> [Int32]
                 -> View 
                 -> [Surface] 
                 -> Surface 
@@ -121,8 +122,7 @@ newFloorCast :: ViewConfig
 newFloorCast vc world lights slices view textures surf = 
   do 
     
-    tps' <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
-    let tps = listArray (0,length textures - 1) tps' 
+    tps <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
 
     mapM_ (lerpRow_ vc world lights slices tps surf)  edges
                
@@ -135,25 +135,38 @@ newFloorCast vc world lights slices view textures surf =
     x1 = 0;
     x2 = vcWindowWidth vc - 1 
     
-lerpRow_ :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO ()     
-lerpRow_ vc (Array2D _ world) lights slices tps surf (y,(p1,p2)) = 
-  withStorableArray world $ \wmap -> 
-    withArray (elems slices) $ \ slices' -> 
-      withArray (map fst (elems tps)) $ \ tps' -> 
-        withArray lights $ \ lights' -> 
+lerpRow_ :: ViewConfig -> MapType -> [Light] -> [Int32] -> [(Pixels,Int32)] -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO ()     
+lerpRow_ vc world lights slices tps surf (y,(p1,p2)) = 
          lerpRowC (wallWidth vc) (modMask vc) (vcWindowWidth vc)
-                  16 16 (castPtr wmap)
-                  (castPtr slices') 
-                  (castPtr tps') 
+                  16 16 world 
+                  slices 
+                  (map fst tps) -- (castPtr tps') 
                   surf
-                  (castPtr lights')                  
+                  lights                  
                   (fromIntegral (length lights))
                   y
                   (fst p1) (snd p1)
                   (fst p2) (snd p2)
              
+newFloorCastPoint :: ViewConfig -> MapType -> View -> Int32 -> Int32 -> (Float,Float)    
+newFloorCastPoint vc world (pos,angle) x y = 
+  ps
+  where 
+    radians = angle - columnAngle
+    columnAngle = atan (fromIntegral (x {-column-} - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
     
+    ps = (fromIntegral (fst pos) - distance * sin radians
+         ,fromIntegral (snd pos) + distance * cos radians)
     
+    distance = rowDistance y 
+    
+    ratioHeightRow row = 128 {-fromIntegral viewerHeight-} / fromIntegral row 
+                         
+    
+    rowDistance row = ratioHeightRow row * fromIntegral (vcViewDistance vc) / cos columnAngle
+
+
+{-     
 lerpRow :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO () 
 lerpRow vc world lights slices tps surf (y,(p1,p2)) = 
   do 
@@ -205,27 +218,12 @@ lerpRow vc world lights slices tps surf (y,(p1,p2)) =
     x1 = 0; 
     
 
-newFloorCastPoint vc world (pos,angle) x y = 
-  ps
-  where 
-    radians = angle - columnAngle
-    columnAngle = atan (fromIntegral (x {-column-} - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
-    
-    ps = (fromIntegral (fst pos) - distance * sin radians
-         ,fromIntegral (snd pos) + distance * cos radians)
-    
-    distance = rowDistance y 
-    
-    ratioHeightRow row = 128 {-fromIntegral viewerHeight-} / fromIntegral row 
-                         
-    
-    rowDistance row = ratioHeightRow row * fromIntegral (vcViewDistance vc) / cos columnAngle
-    
+   -} 
 
 
 
 -- The slices are just there to be able to make some optimisations.              
-    
+{-     
 floorCast :: ViewConfig -> MapType -> [Light] -> Point2D -> Angle -> [Slice] -> [Surface] -> Surface -> IO ()              
 floorCast vc world lights pos angle slices textures surf =              
   zipWithM_ (floorCastColumn vc world lights pos angle textures surf) slices [0..vcWindowWidth vc -1]
@@ -289,7 +287,7 @@ floorCastColumn vc world lights (px,py) angle tex surf slice col =
           r2 = ((vcWindowHeight vc -row-1) * (vcWindowWidth vc) + col )
           textureWidth = 256 -- fix this !!! surfaceGetWidth tex
   
-
+-} 
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
@@ -389,8 +387,8 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
                         wallTextures 
                         screen
                         
-  let slices' = listArray (0,length slices - 1) (map sliceBot slices)
-  newFloorCast vc testLevelFloorArr lights slices' ((x,y),r) floorTextures screen                                     
+
+  newFloorCast vc testLevelFloorArr lights (map sliceBot slices) ((x,y),r) floorTextures screen                                     
   --floorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
   
   

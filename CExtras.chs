@@ -8,6 +8,7 @@ import Foreign.C.String
 import Foreign.ForeignPtr
 import Foreign.Storable -- ing (sizeOf)
 import Foreign.Marshal.Array
+import Data.Array.Storable
 import Data.Word
 import Data.Int
 
@@ -16,9 +17,14 @@ import Control.Applicative
 
 import Graphics.UI.SDL
 
+
+-- Divide cExtras into smaller modules ?
 import Engine.ZBuffer 
+import Engine.Map 
 
 #include "cExtras.h" 
+
+type Pixels = Ptr Int32
 
 mkLight (x,y) (r,g,b) = Light x y r g b 
 data Light = Light {
@@ -83,6 +89,15 @@ instance Storable StructName where
 
 convSurface s f = do 
   withForeignPtr  s $ \ptr -> (f (castPtr ptr))
+  
+convLight l f = do 
+  withArray l $ \ptr -> (f (castPtr ptr)) 
+  
+withPixels ps f = 
+  withArray ps $ \ptr -> (f (castPtr ptr))
+                          
+withMap (MapType w arr) f = 
+  withStorableArray arr $ \ptr -> f (castPtr ptr)
   
 withIntArray xs = withArray (fmap fromIntegral xs)  
 withFloatArray xs = withArray (fmap realToFrac xs)
@@ -174,11 +189,11 @@ void lerpRow(int32_t wallWidth,
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
-    id           `Ptr CInt' , 
-    id           `Ptr CInt' , 
-    id           `Ptr (Ptr CInt)', 
+    withMap*     `MapType' , 
+    withIntArray* `[Int32]' , 
+    withPixels*  `[Pixels]', 
     convSurface* `Surface' ,
-    id           `Ptr ()' ,
+    convLight*   `[Light]' ,
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
     realToFrac   `Float' ,

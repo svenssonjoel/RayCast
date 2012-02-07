@@ -66,7 +66,7 @@ type View = (Point2D, Angle)
 
 castRay :: (MArray StorableArray Int32 m, Monad m)
            => ViewConfig 
-           -> Array2D Int32 Int32 
+           -> MapType -- Array2D Int32 Int32 
            -> [Light] 
            -> View 
            -> Int32 

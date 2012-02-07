@@ -26,7 +26,7 @@ import MathExtras
 -- rendering routines 
     
 -- renderWalls, to replace renderView
-renderWalls :: ViewConfig -> Array2D Int32 Int32 -> [Light] -> View -> [Surface] -> Surface -> IO [Slice]
+renderWalls :: ViewConfig -> MapType {- Array2D Int32 Int32-}  -> [Light] -> View -> [Surface] -> Surface -> IO [Slice]
 renderWalls vc world lights (pos,angle) textures surf = 
   do 
     slices <- mapM (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
