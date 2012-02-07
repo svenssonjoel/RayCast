@@ -1,21 +1,32 @@
 
 
 * RayCast
-  A retro raycaster written in Haskell and C. 
+  A retro raycaster written in Haskell and C. Uses no CUDA, no OpenGL. 
+  At first the idea was to do everything in Haskell but now it looks like 
+  most rendering will be outsourced to C. 
  
   + Textured walls
   + Textured floors and ceilings 
   + crude collision against walls detection
   + Sprites (moving and stationary objects, 2D images "billboarded" into the world)  
+  + Point lightsources (per pixel lighting on floors, per column lighting on walls) 
   
+
 * TODOs 
-  + Reimplement the functions that does actual rendering in C 
+  + MOSTLY DONE: Reimplement the functions that does actual rendering in C 
   + Figure out how to Profile (SDL library made for profiling needed).
   + Collision agains walls needs improvement.  
   + Add Doors 
   + Lighting (lightmaps most likely) 
+  + lookup how to really get illumination based on distance to pointlight. 
+  + Really render ceiling, not just copy the floor onto the ceiling as well (as now).
+  + Monsters that move.
+  + Right now there are lots of fromIntegrals converting between Int32 and Int. Try to 
+    minimize this.   
 
 * Notes 
+  + I want to use the Int32 type to ensure what I do runs the same 
+    on 64 and 32bit architectures. 
   + The Haskell floor function was extremely slow. All calls to floor 
     have been replaced by calls to floor_ and floori_. Both of those 
     are implemented using the C floorf function and the FFI.
