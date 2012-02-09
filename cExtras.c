@@ -10,7 +10,10 @@
 
 #include <stdio.h>
 #include "cExtras.h"
-
+/* 
+   TODO: move computation of light intensity into texturedVLine. 
+   TODO:   the same for renderRItem. 
+ */
 
 /* -----------------------------------------------------------------------------
 
@@ -56,28 +59,31 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
   int y; 
   int sh = surf->h; 
   int sw = surf->w;
-  // int th = text->h;
+ 
   int clipped_y1 = y0 > 0 ? y0 : 0;
   int clipped_y2 = y1 < sh ? y1 : sh;
  
   int lineHeight = y1 - y0; 
   int texHeight = yt1 - yt0; 
 
-  unsigned char *sp =(unsigned char*)surf->pixels;
-  unsigned char *tp =(unsigned char*)text->pixels;  
+  int32_t *sp =(int32_t*)surf->pixels;
+  int32_t *tp =(int32_t*)text->pixels;  
 
   float ratio = (float)texHeight / lineHeight;
   
   for(y = clipped_y1; y<clipped_y2; y++){
     
     float ty = (y - y0) * ratio;
+    int32_t p = 0;
+    int32_t t = tp[texHeight*(int)ty+xt];
+    unsigned char *p_ = (unsigned char*)&p;
+    unsigned char *t_ = (unsigned char*)&t; 
 
+    p_[0] = intensityB * t_[0];
+    p_[1] = intensityG * t_[1]; 
+    p_[2] = intensityR * t_[2];
 
-    sp[4 *(y * sw + x)]   = intensityB * tp[4*(texHeight * (int)ty + xt)];
-    sp[4 *(y * sw + x)+1] = intensityG * tp[4*(texHeight * (int)ty + xt)+1];
-    sp[4 *(y * sw + x)+2] = intensityR * tp[4*(texHeight * (int)ty + xt)+2];
-    //sp[4 *(y * sw + x)+3] = tp[4*(texHeight * texY + xt)+3];
-
+    sp[y*sw+x] = p; 
   } 
 }
 
