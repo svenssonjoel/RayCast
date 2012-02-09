@@ -67,3 +67,12 @@ void lerpRows(int32_t wallWidth,
 	     
 	      float   *p1xa, float *p1ya, 
 	      float   *p2xa, float *p2ya);
+
+void computeLight(float *r,
+		  float *g,
+                  float *b,
+		  int32_t px,
+		  int32_t py, 
+		  light *lights,
+		  int32_t num_lights
+		  );

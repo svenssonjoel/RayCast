@@ -420,26 +420,27 @@ eventLoop :: ViewConfig
              -> (Float,Int32, Int32) 
              -> Int32
              -> IO ()
-eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x,y) ly= do 
+eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x,y) ly = do 
   
   let pf = surfaceGetPixelFormat screen
   
-  let lights = ([mkLight (x,y) (0.5,0.5,0.5)] ++ 
-                [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.02,0.02,0.02) 
-                | i <- [0..10], j <- [0]])
-
+  let lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
+                [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.0,1.0,0.0) 
+                | i <- [0], j <- [0]])
+  
                
   -- pix <- mapRGB pf 8 8 8 
   -- fillRect screen (Just (Rect 0 0 800 600)) pix
   -- fillRect screen (Just (Rect 0 300 800 600)) pix
-      
-  
-  slices <- renderWalls vc 
-                        testLevelArr 
-                        lights 
-                        ((x,y),r) 
-                        wallTextures 
-                        screen
+       
+  slices <- withArray lights $ \lights' ->              
+              renderWalls vc
+                          testLevelArr 
+                          lights' 
+                          (length lights)
+                          ((x,y),r) 
+                          wallTextures 
+                          screen
                         
 
   newFloorCast2 vc testLevelFloorArr lights (map sliceBot slices) ((x,y),r) floorTextures screen                                     

@@ -10,10 +10,8 @@
 
 #include <stdio.h>
 #include "cExtras.h"
-/* 
-   TODO: move computation of light intensity into texturedVLine. 
-   TODO:   the same for renderRItem. 
- */
+
+#define LINEAR_ATTENUATION 0.02 
 
 /* -----------------------------------------------------------------------------
 
@@ -226,7 +224,8 @@ void lerpRow(int32_t wallWidth,
       float xd = lights[l].lx - inx;
       float yd = lights[l].ly - iny;
       double dist = sqrt (xd*xd + yd*yd) / 256;
-      double ld = 1 / fmax(0.01,(dist*dist));
+      //double ld = 1 / fmax(0.01,(dist*dist));
+      double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
       inR += fmin(1.0, lights[l].inR * ld); 
       inG += fmin(1.0, lights[l].inG * ld); 
       inB += fmin(1.0, lights[l].inB * ld); 
@@ -312,8 +311,8 @@ void lerpRows(int32_t wallWidth,
       for (l = 0; l < num_lights; l++) {
 	float xd = lights[l].lx - inx;
 	float yd = lights[l].ly - iny;
-	double dist = sqrt (xd*xd + yd*yd);//  / 256;
-	double ld = 65536 / (dist*dist); // fmax(0.01,(dist*dist));
+	double dist = sqrt (xd*xd + yd*yd); //  / 256;
+	double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
 	inR += lights[l].inR * ld; 
 	inG += lights[l].inG * ld; 
 	inB += lights[l].inB * ld; 
@@ -336,8 +335,30 @@ void lerpRows(int32_t wallWidth,
 }
 
 
-
-	     
+void computeLight(float *r,
+		  float *g,
+                  float *b,
+		  int32_t px,
+		  int32_t py, 
+		  light *lights,
+		  int32_t num_lights
+		  ) {
+  float inG,inB, inR;  
+  inR = inG = inB = 0.0;
+  int l;
+  for (l = 0; l < num_lights; l++) {
+    int32_t xd = lights[l].lx - px;
+    int32_t yd = lights[l].ly - py;
+    double dist = sqrt (xd*xd + yd*yd);
+    double ld = 1 / (LINEAR_ATTENUATION*dist); 
+    inR += lights[l].inR * ld; 
+    inG += lights[l].inG * ld; 
+    inB += lights[l].inB * ld; 
+  } 
+  *r = fmin(1.0,inR);
+  *g = fmin(1.0,inG);
+  *b = fmin(1.0,inB);
+}	     
 
 /* 
 lerpRow :: ViewConfig -> MapType -> [Light] -> Array Int Int32 -> Array Int (Ptr CInt,Int32) -> Surface -> (Int32, ((Float,Float),(Float,Float))) -> IO () 

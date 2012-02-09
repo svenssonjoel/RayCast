@@ -8,10 +8,12 @@ import Foreign.C.String
 import Foreign.ForeignPtr
 import Foreign.Storable -- ing (sizeOf)
 import Foreign.Marshal.Array
+import Foreign.Marshal.Alloc
 import Data.Array.Storable
 import Data.Word
 import Data.Int
 
+import System.IO.Unsafe
 import Control.Monad
 import Control.Applicative
 
@@ -35,6 +37,8 @@ data Light = Light {
                inB'light :: Float 
               } 
 
+
+
 instance Storable Light where 
   sizeOf _ = {#sizeof light #} 
 
@@ -51,42 +55,6 @@ instance Storable Light where
     {#set light.inG #} p (realToFrac $ inG'light x) 
     {#set light.inB #} p (realToFrac $ inB'light x) 
 
-  --peekByteOff :: Ptr b -> Int -> IO a
-{-   peekElemOff ptl offs = 
-    do
-      (x :: Int32) <- peekElemOff (castPtr ptl) offs  
-      (y :: Int32) <- peekElemOff (castPtr ptl) (offs + sizeOf x) 
-      (r :: Float) <- peekElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y)
-      (g :: Float) <- peekElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r)
-      (b :: Float) <- peekElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r + sizeOf g) 
-      
-      return (Light (x,y) (r,g,b)) 
-  -- pokeElemOff :: Ptr a -> Int -> a -> IO ()     
-  pokeElemOff ptl offs (Light (x,y) (r,g,b)) = 
-    do 
-      pokeElemOff (castPtr ptl) offs x 
-      pokeElemOff (castPtr ptl) (offs + sizeOf x) y
-      pokeElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y) r
-      pokeElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r) g 
-      pokeElemOff (castPtr ptl) (offs + sizeOf x + sizeOf y + sizeOf r + sizeOf g) b
--} 
-{- 
-ata StructName = StructName
-  { struct_field1'StructName :: Int
-  , struct_field2'StructName :: Int
-  }
-instance Storable StructName where
-  sizeOf _ = {#sizeof StructName #}
-  alignment _ = 4
-  peek p = StructName
-    <$> liftM cIntConv ({#get StructName->struct_field1 #} p)
-    <*> liftM cIntConv ({#get StructName->struct_field2 #} p)
-  poke p x = do
-    {#set StructName.struct_field1 #} p (cIntConv $ struct_field1'StructName x)
-    {#set StructName.struct_field2 #} p (cIntConv $ struct_field2'StructName x)
-
--} 
-
 convSurface s f = do 
   withForeignPtr  s $ \ptr -> (f (castPtr ptr))
   
@@ -102,6 +70,8 @@ withMap (MapType w arr) f =
 withIntArray xs = withArray (fmap fromIntegral xs)  
 withFloatArray xs = withArray (fmap realToFrac xs)
  
+peekFloat ptr = realToFrac `fmap`  peek ptr                    
+
 {# fun unsafe texturedVLine as texVLine 
   { fromIntegral `Int' , 
     fromIntegral `Int' , 
@@ -221,3 +191,14 @@ void lerpRow(int32_t wallWidth,
     
     
     
+
+{# fun unsafe computeLight as computeLight
+   { alloca- `Float' peekFloat* , 
+     alloca- `Float' peekFloat* , 
+     alloca- `Float' peekFloat* , 
+     fromIntegral `Int32' , 
+     fromIntegral `Int32' , 
+     castPtr   `Ptr Light' ,
+     fromIntegral `Int' } -> `()' id #}
+     
+     

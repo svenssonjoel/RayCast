@@ -64,14 +64,16 @@ type View = (Point2D, Angle)
 ----------------------------------------------------------------------------
 -- raycasting  
 
-castRay :: (MArray StorableArray Int32 m, Monad m)
-           => ViewConfig 
+castRay :: -- (MArray StorableArray Int32 m, Monad m)
+          -- => 
+           ViewConfig 
            -> MapType -- Array2D Int32 Int32 
-           -> [Light] 
+           -> Ptr Light -- [Light] 
+           -> Int
            -> View 
            -> Int32 
-           -> m Slice 
-castRay vc world lights (pos,angle) column = 
+           -> IO Slice 
+castRay vc world lights numLights (pos,angle) column = 
   do 
   
   let ray  = mkRay pos (angle - columnAngle)
@@ -80,7 +82,7 @@ castRay vc world lights (pos,angle) column =
   
       
       
-  (dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights 0.0 ray   
+  (dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights numLights 0.0 ray   
   let dist = dist' * cos columnAngle
       height = floori_ $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
       top  = bot - height 
@@ -101,33 +103,37 @@ castRay vc world lights (pos,angle) column =
 lightContribution (px,py) (Light  lx ly   inR' inG' inB' ) = (inR,inG,inB)    
   where
     -- How to really compute light contribution? 
-    lightdist = (distance (px,py) (lx,ly) / 256) 
-    ld = max 0.01 (lightdist * lightdist)
-    (inR,inG,inB) = (min 1.0 (inR'/ld),
-                     min 1.0 (inG'/ld),
-                     min 1.0 (inB'/ld))
+    lightdist = (distance (px,py) (lx,ly)) 
+    ld = 1/(0.02*lightdist)
+    (inR,inG,inB) = (inR'*ld,
+                     inG'*ld,
+                     inB'*ld)
                     
 vec3add (x,y,z) (u,v,w) = (x+u,y+v,z+w)
 clamp i (x,y,z) = (min x i, min y i, min z i) 
 
 ----------------------------------------------------------------------------
 -- castRay2
-castRay2 :: (MArray StorableArray Int32 m, Monad m) 
-            => ViewConfig 
+castRay2 :: --(MArray StorableArray Int32 m, Monad m) 
+            -- => 
+            ViewConfig 
             -> MapType 
-            -> [Light] 
+            -> Ptr Light -- [Light] 
+            -> Int
             -> Float 
             -> Ray  
-            -> m (Float,Int32,Int32,(Float,Float,Float))
-castRay2 vc world lights accDist ray = 
+            -> IO (Float,Int32,Int32,(Float,Float,Float))
+castRay2 vc world lights numLights accDist ray = 
     do 
       value <- world !! (px `div` wallWidth vc, py `div` wallWidth vc)
       if (value > 0) -- ray has struck solid wall
         then 
-          return (accDist+dist,value,offs,(inR,inG,inB)) 
+          do 
+            ((),inR,inG,inB) <- computeLight px py lights numLights
+            return (accDist+dist,value,offs,(inR,inG,inB)) 
         else 
           -- Continue along the ray 
-          castRay2 vc world lights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+          castRay2 vc world lights numLights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
 
         
   where 
@@ -139,8 +145,8 @@ castRay2 vc world lights accDist ray =
              else (rayY ray .&. gridMask vc) -1 
                   
     -- Experimental lighting 
-    (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (px,py))  lights)
-  
+    -- (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (px,py))  lights)
+    
     
     
     -- Create two lines for intersection test
