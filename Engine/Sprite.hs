@@ -25,6 +25,7 @@ viewTransformSprite :: ViewConfig -> [Light] -> View -> Sprite -> Maybe RItem
 viewTransformSprite vc lights (viewPos,viewAngle) spr  
   | ry > 0 = --(using > in place of >= fixed a visible glitch) 
     Just $ RItem (projx_,viewportCenterY vc -(mh `div` 2)) 
+                 (spritePos spr)
                  (mw,mh) 
                  (spriteTexture spr) 
                  (ry) -- dist
@@ -46,9 +47,9 @@ viewTransformSprite vc lights (viewPos,viewAngle) spr
     
     
     dist    = sqrt (rx*rx+ry*ry)
-    
-    mw = fromIntegral $ floori_ (256*(fromIntegral (vcViewDistance vc)/ dist))
-    mh = fromIntegral $ floori_ (256*(fromIntegral (vcViewDistance vc)/ dist))
+    (ow,oh) = spriteDims spr
+    mw = fromIntegral $ floori_ (ow*(fromIntegral (vcViewDistance vc)/ dist))
+    mh = fromIntegral $ floori_ (oh*(fromIntegral (vcViewDistance vc)/ dist))
     projx = rx * fromIntegral (vcViewDistance vc) / ry  
                 
     projx_ = (fromIntegral (floori_ projx)) + (viewportCenterX vc - (mw `div` 2))    

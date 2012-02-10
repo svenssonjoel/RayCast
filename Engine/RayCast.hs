@@ -10,6 +10,7 @@ import Data.Bits
 import Engine.Math
 import Engine.Map
 import Engine.Light 
+import Engine.RGB
 
 import MathExtras 
 
@@ -68,10 +69,8 @@ type View = (Point2D, Angle)
 castRay :: -- (MArray StorableArray Int32 m, Monad m)
           -- => 
            ViewConfig 
-           -> MapType -- Array2D Int32 Int32 
+           -> MapType 
            -> Lights
-          -- -> Ptr Light -- [Light] 
-          -- -> Int
            -> View 
            -> Int32 
            -> IO Slice 
@@ -94,7 +93,6 @@ castRay vc world lights (pos,angle) column =
                  bot 
                  texValue 
                  texCol 
-                 -- (min 1.0 (32768 {-lightradius-}/(dist*dist))) 
                  inR inG inB 
                  dist 
   where 
@@ -121,8 +119,6 @@ castRay2 :: --(MArray StorableArray Int32 m, Monad m)
             ViewConfig 
             -> MapType 
             -> Lights
-            -- -> Ptr Light -- [Light] 
-           --  -> Int
             -> Float 
             -> Ray  
             -> IO (Float,Int32,Int32,(Float,Float,Float))
@@ -147,10 +143,6 @@ castRay2 vc world lights accDist ray =
              then (rayY ray .&. gridMask vc) + wallWidth vc
              else (rayY ray .&. gridMask vc) -1 
                   
-    -- Experimental lighting 
-    -- (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (px,py))  lights)
-    
-    
     
     -- Create two lines for intersection test
     x_line = Line (fromIntegral grid_x,0) (fromIntegral grid_x,1) 
@@ -167,12 +159,12 @@ castRay2 vc world lights accDist ray =
     ((px,py),dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p `mod` wallWidth vc) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p `mod` wallWidth vc) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p .&. modMask vc)) -- `mod` wallWidth vc) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p .&. modMask vc)) -- <`mod` wallWidth vc) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1,(snd p `mod` wallWidth vc) ) 
-             else (q,d2,(fst q `mod` wallWidth vc) ) 
+             then (p,d1,(snd p .&. modMask vc)) -- `mod` wallWidth vc) ) 
+             else (q,d2,(fst q .&. modMask vc)) -- `mod` wallWidth vc) ) 
 

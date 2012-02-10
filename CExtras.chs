@@ -28,32 +28,28 @@ import Engine.Map
 
 type Pixels = Ptr Int32
 
-mkLight (x,y) (r,g,b) = Light x y r g b 
-data Light = Light {
-               lx'light :: Int32,
-               ly'light :: Int32 , 
-               inR'light :: Float,
-               inG'light :: Float,
-               inB'light :: Float 
-              } 
-
-
+data Light = Light Int32 Int32 
+                   Float Float Float 
 
 instance Storable Light where 
   sizeOf _ = {#sizeof light #} 
 
-  alignment a = 4
-  peek p = Light <$>  liftM fromIntegral ({#get light->lx #} p)
-                 <*>  liftM fromIntegral ({#get light->ly #} p)
-                 <*>  liftM realToFrac   ({#get light->inR #} p) 
-                 <*>  liftM realToFrac   ({#get light->inR #} p) 
-                 <*>  liftM realToFrac   ({#get light->inR #} p)
-  poke p x = do 
-    {#set light.lx #} p (fromIntegral $ lx'light x) 
-    {#set light.ly #} p (fromIntegral $ ly'light x) 
-    {#set light.inR #} p (realToFrac $ inR'light x) 
-    {#set light.inG #} p (realToFrac $ inG'light x) 
-    {#set light.inB #} p (realToFrac $ inB'light x) 
+  alignment a = 4 -- ? 
+  peek p = 
+    do  
+      px <- fromIntegral `fmap` ({#get light->lx #} p) 
+      py <- fromIntegral `fmap` ({#get light->ly #} p) 
+      r <- realToFrac `fmap` ({#get light->inR #} p) 
+      g <- realToFrac `fmap` ({#get light->inG #} p) 
+      b <- realToFrac `fmap` ({#get light->inB #} p) 
+      return$ Light px py r g b 
+
+  poke p (Light px py r g b) = do 
+    {#set light.lx #} p (fromIntegral $ px) 
+    {#set light.ly #} p (fromIntegral $ py) 
+    {#set light.inR #} p (realToFrac $ r) 
+    {#set light.inG #} p (realToFrac $ g) 
+    {#set light.inB #} p (realToFrac $ b) 
 
 convSurface s f = do 
   withForeignPtr  s $ \ptr -> (f (castPtr ptr))
@@ -106,10 +102,10 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
 --   withFloatArray* `[Float]' } -> `()' id #}
 
 {# fun unsafe renderRItem as renderRItemC_ 
- { fromIntegral `Int' ,
-   fromIntegral `Int' ,
-   fromIntegral `Int' ,
-   fromIntegral `Int' ,  -- the Rect
+ { fromIntegral `Int32' ,
+   fromIntegral `Int32' ,
+   fromIntegral `Int32' ,
+   fromIntegral `Int32' ,  -- the Rect
    convSurface* `Surface' , 
    convSurface* `Surface' ,
    realToFrac   `Float' ,

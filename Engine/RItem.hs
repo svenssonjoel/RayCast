@@ -10,6 +10,7 @@ module Engine.RItem where
 
 import Graphics.UI.SDL
 
+import Engine.Math
 import Engine.RayCast
 import Engine.ZBuffer
 
@@ -27,7 +28,8 @@ import CExtras
 import MathExtras
 
 -- An objected projected onto screen 
-data RItem = RItem { rItemPos  :: (Int32,Int32), -- position on screen
+data RItem = RItem { rItemPos  :: Point2D, -- position on screen
+                     rItemWorldPos :: Point2D,  
                      rItemDims :: (Int32,Int32),
                      rItemTexture :: Surface, 
                      rItemDepth   :: Float,
@@ -47,14 +49,11 @@ renderRItem surf dists ritem =
                              (rItemIntensityG ritem)
                              (rItemIntensityB ritem)
                              dist dists
-  --drawTransparentZ (rItemTexture ritem) 
-  --                 surf 
-  --                 (Rect x y w h) dist dists
   where 
-    x = fromIntegral$ fst $ rItemPos ritem                 
-    y = fromIntegral$ snd $ rItemPos ritem 
-    w = fromIntegral$ fst $ rItemDims ritem
-    h = fromIntegral$ snd $ rItemDims ritem
+    x = fst $ rItemPos ritem                 
+    y = snd $ rItemPos ritem 
+    w = fst $ rItemDims ritem
+    h = snd $ rItemDims ritem
     dist = rItemDepth ritem 
 
 
