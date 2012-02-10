@@ -14,6 +14,7 @@ import Control.Monad
 import Engine.RayCast
 import Engine.Math
 import Engine.Map 
+import Engine.Light
 
 import SDLUtils 
 import CExtras
@@ -31,15 +32,16 @@ import Foreign.Ptr
 -- renderWalls, to replace renderView
 renderWalls :: ViewConfig 
                -> MapType {- Array2D Int32 Int32-}  
-               -> Ptr Light  -- [Light] 
-               -> Int
+               -> Lights
+               -- -> Ptr Light  -- [Light] 
+               -- -> Int
                -> View 
                -> [Surface] 
                -> Surface 
                -> IO [Slice]
-renderWalls vc world lights numLights (pos,angle) textures surf = 
+renderWalls vc world lights (pos,angle) textures surf = 
   do 
-    slices <- mapM (castRay vc world lights numLights (pos,angle))  [0..vcWindowWidth vc-1]
+    slices <- mapM (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
     zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
     return slices
    

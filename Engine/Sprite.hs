@@ -39,6 +39,8 @@ viewTransformSprite vc lights (viewPos,viewAngle) spr
     
     
     -- Compute light 
+    -- TODO: move lighting computation to renderRItem 
+    --       This means RITem needs to contain world position as well. 
     (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (spritePos spr))  lights)
   
     

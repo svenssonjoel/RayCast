@@ -188,6 +188,24 @@ void lerpRow(int32_t wallWidth,
     withFloatArray*   `[Float]' ,
     withFloatArray*   `[Float]' ,
     withFloatArray*   `[Float]' } -> `()' id #}
+
+
+{# fun unsafe lerpRows as lerpRowsC_ 
+  { fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    withMap*     `MapType' , 
+    withIntArray* `[Int32]' , 
+    withPixels*  `[Pixels]', 
+    convSurface* `Surface' ,
+    castPtr      `Ptr Light' ,
+    fromIntegral `Int32' , 
+    withFloatArray*   `[Float]' ,
+    withFloatArray*   `[Float]' ,
+    withFloatArray*   `[Float]' ,
+    withFloatArray*   `[Float]' } -> `()' id #}
     
     
     
@@ -198,7 +216,7 @@ void lerpRow(int32_t wallWidth,
      alloca- `Float' peekFloat* , 
      fromIntegral `Int32' , 
      fromIntegral `Int32' , 
-     castPtr   `Ptr Light' ,
-     fromIntegral `Int' } -> `()' id #}
+     castPtr      `Ptr Light' ,
+     fromIntegral `Int32' } -> `()' id #}
      
      

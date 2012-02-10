@@ -9,6 +9,7 @@ import Data.Bits
 
 import Engine.Math
 import Engine.Map
+import Engine.Light 
 
 import MathExtras 
 
@@ -68,12 +69,13 @@ castRay :: -- (MArray StorableArray Int32 m, Monad m)
           -- => 
            ViewConfig 
            -> MapType -- Array2D Int32 Int32 
-           -> Ptr Light -- [Light] 
-           -> Int
+           -> Lights
+          -- -> Ptr Light -- [Light] 
+          -- -> Int
            -> View 
            -> Int32 
            -> IO Slice 
-castRay vc world lights numLights (pos,angle) column = 
+castRay vc world lights (pos,angle) column = 
   do 
   
   let ray  = mkRay pos (angle - columnAngle)
@@ -82,7 +84,7 @@ castRay vc world lights numLights (pos,angle) column =
   
       
       
-  (dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights numLights 0.0 ray   
+  (dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights 0.0 ray   
   let dist = dist' * cos columnAngle
       height = floori_ $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
       top  = bot - height 
@@ -118,22 +120,23 @@ castRay2 :: --(MArray StorableArray Int32 m, Monad m)
             -- => 
             ViewConfig 
             -> MapType 
-            -> Ptr Light -- [Light] 
-            -> Int
+            -> Lights
+            -- -> Ptr Light -- [Light] 
+           --  -> Int
             -> Float 
             -> Ray  
             -> IO (Float,Int32,Int32,(Float,Float,Float))
-castRay2 vc world lights numLights accDist ray = 
+castRay2 vc world lights accDist ray = 
     do 
       value <- world !! (px `div` wallWidth vc, py `div` wallWidth vc)
       if (value > 0) -- ray has struck solid wall
         then 
           do 
-            ((),inR,inG,inB) <- computeLight px py lights numLights
+            ((),inR,inG,inB) <- computeLight px py (lightsPtr lights) (lightsNum lights)
             return (accDist+dist,value,offs,(inR,inG,inB)) 
         else 
           -- Continue along the ray 
-          castRay2 vc world lights numLights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+          castRay2 vc world lights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
 
         
   where 

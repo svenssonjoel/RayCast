@@ -37,6 +37,7 @@ import Engine.Render
 import Engine.RItem
 import Engine.Sprite 
 import Engine.ZBuffer
+import Engine.Light 
 
 import Control.Monad
 import Data.Array
@@ -176,6 +177,39 @@ newFloorCast2 vc world lights slices view textures surf =
     x1 = 0;
     x2 = vcWindowWidth vc - 1 
     
+
+newFloorCast3 :: ViewConfig 
+                 -> MapType 
+                 -> Lights 
+                -- -> Ptr Light
+                --  -> Int32
+                 -> [Int32]
+                 -> View 
+                 -> [Surface] 
+                 -> Surface 
+                 -> IO ()
+newFloorCast3 vc world lights slices view textures surf = 
+  do 
+    
+    tps <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
+    lerpRows_2 vc world lights slices tps surf x1s y1s x2s y2s 
+               
+  where 
+    -- TODO: Storable points. 
+    -- TODO: Storable Pairs of points. (lines)  
+    (x1s,y1s) = unzip edgeL
+    (x2s,y2s) = unzip edgeR
+    
+    edgeL = [newFloorCastPoint vc world view x1 y
+            | y <- [0..(viewportCenterY vc-1)]] 
+    edgeR = [newFloorCastPoint vc world view x2 y
+            | y <- [0..(viewportCenterY vc-1)]] 
+    
+    x1 = 0;
+    x2 = vcWindowWidth vc - 1 
+
+
+
 lerpRows_ :: ViewConfig 
              -> MapType 
              -> [Light] 
@@ -197,6 +231,32 @@ lerpRows_ vc world lights slices tps surf p1x p1y p2x p2y =
                   (fromIntegral (length lights))
                   p1x p1y
                   p2x p2y
+
+
+lerpRows_2 :: ViewConfig 
+             -> MapType 
+             -> Lights
+           --  -> Ptr Light 
+           --  -> Int32
+             -> [Int32] 
+             -> [(Pixels,Int32)] 
+             -> Surface 
+             -> [Float] 
+             -> [Float] 
+             -> [Float] 
+             -> [Float] 
+             -> IO ()     
+lerpRows_2 vc world lights slices tps surf p1x p1y p2x p2y = 
+         lerpRowsC_ (wallWidth vc) (modMask vc) (vcWindowWidth vc)
+                  16 16 world 
+                  slices 
+                  (map fst tps) -- (castPtr tps') 
+                  surf
+                  (lightsPtr lights)
+                  (lightsNum lights) -- (fromIntegral (length lights))
+                  p1x p1y
+                  p2x p2y
+
 
 
 
@@ -427,24 +487,19 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
   let lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
                 [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.0,1.0,0.0) 
                 | i <- [0], j <- [0]])
-  
                
-  -- pix <- mapRGB pf 8 8 8 
-  -- fillRect screen (Just (Rect 0 0 800 600)) pix
-  -- fillRect screen (Just (Rect 0 300 800 600)) pix
-       
-  slices <- withArray lights $ \lights' ->              
-              renderWalls vc
+  slices <- withLights lights $ \lights' ->              
+    do 
+       sli <- renderWalls vc
                           testLevelArr 
                           lights' 
-                          (length lights)
                           ((x,y),r) 
                           wallTextures 
                           screen
-                        
-
-  newFloorCast2 vc testLevelFloorArr lights (map sliceBot slices) ((x,y),r) floorTextures screen                                     
-  --floorCast vc testLevelFloorArr lights (x,y) r slices floorTextures screen
+       newFloorCast3 vc testLevelFloorArr lights' (map sliceBot sli) ((x,y),r) floorTextures screen                                     
+       return sli
+       
+ 
   
   
   let dists  = map sliceDistance slices
