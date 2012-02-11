@@ -139,8 +139,9 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
       
     float xd = lights[l].lx - wx;
     float yd = lights[l].ly - wy;
-    double dist = sqrt (xd*xd + yd*yd);// / 256;
-    double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
+    double dist = sqrt (xd*xd + yd*yd);
+    // offset distance slightly to ensure no div by zero
+    double ld = 1 / (LINEAR_ATTENUATION*(dist+0.0001));  
     inR += lights[l].inR * ld; 
     inG += lights[l].inG * ld; 
     inB += lights[l].inB * ld; 

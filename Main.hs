@@ -484,7 +484,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,p
   
   let (x,y) = (point2DGetX pos, point2DGetY pos)
       lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
-                [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.0,1.0,0.0) 
+                [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (1.0,0.0,0.0) 
                 | i <- [0,9], j <- [0]])
                
   withLights lights $ \lights' ->              
