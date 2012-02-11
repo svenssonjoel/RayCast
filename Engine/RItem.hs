@@ -49,12 +49,12 @@ renderRItem surf dists lights ritem =
   
   
   where 
-    x = fst $ rItemPos ritem                 
-    y = snd $ rItemPos ritem 
+    x = point2DGetX $ rItemPos ritem                 
+    y = point2DGetY $ rItemPos ritem 
     w = fst $ rItemDims ritem
     h = snd $ rItemDims ritem
-    wx = fst $ rItemWorldPos ritem
-    wy = snd $ rItemWorldPos ritem
+    wx = point2DGetX $ rItemWorldPos ritem
+    wy = point2DGetY $ rItemWorldPos ritem
     dist = rItemDepth ritem 
 
 

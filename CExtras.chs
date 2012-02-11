@@ -28,8 +28,8 @@ import Engine.Map
 
 type Pixels = Ptr Int32
 
-data Light = Light Int32 Int32 
-                   Float Float Float 
+data Light = Light !Int32 !Int32 
+                   !Float !Float !Float 
 
 instance Storable Light where 
   sizeOf _ = {#sizeof light #} 

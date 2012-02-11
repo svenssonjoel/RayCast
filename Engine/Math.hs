@@ -2,23 +2,94 @@ module Engine.Math where
 
 import Data.Int
 
+import Foreign.C.Types
+import Foreign.Storable
+
 import MathExtras
 ----------------------------------------------------------------------------
 -- Angles, Points, Vectors 
 type Angle = Float 
-type Point2D = (Int32,Int32) 
-type Vector2D = (Int32,Int32) 
 
-vecAdd (x1,y1) (x2,y2) = (x1+x2,y1+y2) 
-vecSub (x1,y1) (x2,y2) = (x1-x2,y1-y2)
+data Point2D = Point2D {point2DGetX :: !Int32, 
+                          point2DGetY :: !Int32}
+              deriving (Eq,Show)
+                       
+mkPoint (x,y) = Point2D x y                       
+data Vector2D = Vector2D {vector2DGetX :: !Int32, 
+                            vector2DGetY :: !Int32}
+               deriving (Eq,Show)
+                        
+mkVector (x,y) = Vector2D x y                         
 
+instance Storable Point2D where
+  sizeOf _  = sizeOf (undefined :: Int32) * 2 
+  alignment _ = 4
+  peek p = do 
+    x <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt)
+    y <- fromIntegral `fmap` (peekByteOff p 4 :: IO CInt) 
+    return $ Point2D x y 
+  poke p (Point2D x y) = do 
+    pokeByteOff p 0 (fromIntegral x :: CInt) 
+    pokeByteOff p 4 (fromIntegral y :: CInt)
+
+instance Num Point2D where 
+  (+) (Point2D x1 y1) (Point2D x2 y2) = Point2D (x1+x2) (y1+y2) 
+  (-) (Point2D x1 y1) (Point2D x2 y2) = Point2D (x1-x2) (y1-y2) 
+  (*) (Point2D x1 y1) (Point2D x2 y2) = Point2D (x1*x2) (y1*y2) 
+  abs = undefined
+  signum = undefined 
+  fromInteger i = Point2D (fromInteger i) 0 
+
+instance Storable Vector2D where
+  sizeOf _  = sizeOf (undefined :: Int32) * 2 
+  alignment _ = 4
+  peek p = do 
+    x <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt)
+    y <- fromIntegral `fmap` (peekByteOff p 4 :: IO CInt) 
+    return $ Vector2D x y 
+  poke p (Vector2D x y) = do 
+    pokeByteOff p 0 (fromIntegral x :: CInt) 
+    pokeByteOff p 4 (fromIntegral y :: CInt)
+
+
+instance Num Vector2D where 
+  (+) (Vector2D x1 y1) (Vector2D x2 y2) = Vector2D (x1+x2) (y1+y2) 
+  (-) (Vector2D x1 y1) (Vector2D x2 y2) = Vector2D (x1-x2) (y1-y2) 
+  (*) (Vector2D x1 y1) (Vector2D x2 y2) = Vector2D (x1*x2) (y1*y2) 
+  abs = undefined
+  signum = undefined 
+  fromInteger i = Vector2D (fromInteger i) 0 
+  
+  
+
+
+--vecAdd (x1,y1) (x2,y2) = (x1+x2,y1+y2) 
+--vecSub (x1,y1) (x2,y2) = (x1-x2,y1-y2)
+vecAdd = (+)
+vecSub = (-) 
+
+
+{-
 distance :: Point2D -> Point2D -> Float 
 distance (x1,y1) (x2,y2) = 
   sqrt $ xd*xd+yd*yd 
   where 
     xd = fromIntegral $ x2 - x1 
     yd = fromIntegral $ y2 - y1
+  -}   
+distance :: Point2D -> Point2D -> Float 
+distance p1 p2 = 
+  sqrt $ xd*xd+yd*yd 
+  where 
+    x1 = point2DGetX p1;
+    y1 = point2DGetY p1; 
+    x2 = point2DGetX p2;
+    y2 = point2DGetY p2; 
     
+    xd = fromIntegral $ x2 - x1 
+    yd = fromIntegral $ y2 - y1
+
+
 
 ----------------------------------------------------------------------------
 -- Rays 
@@ -28,17 +99,18 @@ data Ray = Ray {rayStart  :: Point2D,
            -- point direction repr 
 
 mkRay :: Point2D -> Angle -> Ray 
-mkRay p r = Ray p (floori_ (-1024.0*sin r),
-                   floori_ ( 1024.0*cos r)) 
+mkRay p r = Ray p 
+                (mkVector (floori_ (-1024.0*sin r),
+                           floori_ ( 1024.0*cos r)))
 
 posRayDx  r = rayDx r > 0 
 posRayDy  r = rayDy r > 0 
 
-rayDx r = fst $ rayDeltas r 
-rayDy r = snd $ rayDeltas r 
+rayDx r = vector2DGetX $ rayDeltas r 
+rayDy r = vector2DGetY $ rayDeltas r 
 
-rayX  r = fst $ rayStart r 
-rayY  r = snd $ rayStart r
+rayX  r = point2DGetX $ rayStart r 
+rayY  r = point2DGetY $ rayStart r
 
 
 ----------------------------------------------------------------------------
@@ -51,10 +123,10 @@ mkLine = Line
 ----------------------------------------------------------------------------
 -- 
 
-intersect :: Ray -> Line -> Maybe Vector2D 
+intersect :: Ray -> Line -> Maybe Point2D 
 intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
                                      then Nothing 
-                                     else (Just (x,y)) 
+                                     else (Just (mkPoint (x,y))) 
  where  
    (a1,b1,c1) = convertRay p1 d1
    (a2,b2,c2) = convertLine p2 d2 
@@ -64,14 +136,14 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0
    y = (a1*c2 - a2*c1)  `div` det
 
 --convertRay :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
-convertRay  (x, y) (dx, dy) = (a,b,c) 
+convertRay  (Point2D x y) (Vector2D dx dy) = (a,b,c) 
   where 
     a = dy             -- (y+dy) - y  
     b = -dx            -- x - (x+dx)
     c = a*x+b*y
    
 --convertLine :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
-convertLine (x1,y1) (x2,y2) = (a,b,c) 
+convertLine (Point2D x1 y1) (Point2D x2 y2) = (a,b,c) 
   where 
     a = y2 - y1 
     b = x1 - x2

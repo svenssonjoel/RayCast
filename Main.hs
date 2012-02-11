@@ -112,6 +112,7 @@ walkSpeed      = 32
     
 ----------------------------------------------------------------------------      
 -- Cast for floors 
+{- 
 newFloorCast :: ViewConfig 
                 -> MapType 
                 -> [Light]
@@ -141,7 +142,7 @@ lerpRow_ vc world lights slices tps surf (y,(p1,p2)) =
          lerpRowC (wallWidth vc) (modMask vc) (vcWindowWidth vc)
                   16 16 world 
                   slices 
-                  (map fst tps) -- (castPtr tps') 
+                  (map fst tps)
                   surf
                   lights                  
                   (fromIntegral (length lights))
@@ -177,6 +178,7 @@ newFloorCast2 vc world lights slices view textures surf =
     x1 = 0;
     x2 = vcWindowWidth vc - 1 
     
+-} 
 
 newFloorCast3 :: ViewConfig 
                  -> MapType 
@@ -207,7 +209,7 @@ newFloorCast3 vc world lights slices view textures surf =
     x2 = vcWindowWidth vc - 1 
 
 
-
+{- 
 lerpRows_ :: ViewConfig 
              -> MapType 
              -> [Light] 
@@ -230,7 +232,7 @@ lerpRows_ vc world lights slices tps surf p1x p1y p2x p2y =
                   p1x p1y
                   p2x p2y
 
-
+-} 
 lerpRows_2 :: ViewConfig 
              -> MapType 
              -> Lights
@@ -246,7 +248,7 @@ lerpRows_2 vc world lights slices tps surf p1x p1y p2x p2y =
          lerpRowsC_ (wallWidth vc) (modMask vc) (vcWindowWidth vc)
                   16 16 world 
                   slices 
-                  (map fst tps) -- (castPtr tps') 
+                  (map fst tps) 
                   surf
                   (lightsPtr lights)
                   (lightsNum lights) -- (fromIntegral (length lights))
@@ -263,8 +265,8 @@ newFloorCastPoint vc world (pos,angle) x y =
     radians = angle - columnAngle
     columnAngle = atan (fromIntegral (x {-column-} - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
     
-    ps = (fromIntegral (fst pos) - distance * sin radians
-         ,fromIntegral (snd pos) + distance * cos radians)
+    ps = (fromIntegral (point2DGetX pos) - distance * sin radians
+         ,fromIntegral (point2DGetY pos) + distance * cos radians)
     
     distance = rowDistance y 
     
@@ -450,7 +452,7 @@ main = do
 
   
   monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
-  let monsterSprite = [Sprite ((x+5)*256+128,(y+1)*256+128)
+  let monsterSprite = [Sprite (mkPoint ((x+5)*256+128,(y+1)*256+128))
                               0
                               (256,256) 
                               monster | x <- [0..10], y <- [0..10]] 
@@ -460,7 +462,7 @@ main = do
   eventLoop vc screen floorTextures wallTextures -- testTexture floorTex
     monsterSprite
     (False,False,False,False) -- Keyboard state
-    (0.0,256+128 ,256+128)
+    (0.0,mkPoint (256+128 ,256+128))
     0
     
   quit
@@ -475,32 +477,33 @@ eventLoop :: ViewConfig
              -> [Surface] 
              -> [Sprite]
              -> (Bool,Bool,Bool,Bool) 
-             -> (Float,Int32, Int32) 
+             -> (Float,Point2D) 
              -> Int32
              -> IO ()
-eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x,y) ly = do 
+eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,pos) ly = do 
   
-  let lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
+  let (x,y) = (point2DGetX pos, point2DGetY pos)
+      lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
                 [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.0,1.0,0.0) 
-                | i <- [0], j <- [0]])
+                | i <- [0,9], j <- [0]])
                
   withLights lights $ \lights' ->              
     do 
        sl <- renderWalls vc
                          testLevelArr 
                          lights' 
-                         ((x,y),r) 
+                         (pos,r) 
                          wallTextures 
                          screen
                          
        let dists  = map sliceDistance sl
            bots   = map sliceBot      sl 
-       newFloorCast3 vc testLevelFloorArr lights' bots ((x,y),r) floorTextures screen                                     
+       newFloorCast3 vc testLevelFloorArr lights' bots (pos,r) floorTextures screen                                     
 
        
        let monsterTfrmd = sortRItems $ 
                           catMaybes $ 
-                          map (viewTransformSprite vc ((x,y),r)) monster    
+                          map (viewTransformSprite vc (pos,r)) monster    
        
        withZBuffer dists $ \zbuf -> 
          sequence_ $ map (renderRItem screen zbuf lights') monsterTfrmd
@@ -536,17 +539,18 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
           otherwise -> (up,down,left,right,False)
   
   (r',x',y') <- (moveLeft left' >=> moveRight right' >=> moveUp up' >=> moveDown down') (r,x,y) 
-
-  unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',x',y') ((ly + 128) `mod` 4096)    
+  
+  let pos' = mkPoint (x',y')
+  unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',pos') ((ly + 128) `mod` 4096)    
   
   
   -- very crude colision against walls added
   where 
     a = 3
     moveLeft :: Monad m => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
-    moveLeft  b (r,x,y) = return $ if b then (r+0.04,x,y) else (r,x,y) 
+    moveLeft  b (r,x,y) = return $ if b then (r+0.08,x,y) else (r,x,y) 
     moveRight :: Monad m => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
-    moveRight b (r,x,y) = return $ if b then (r-0.04,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = return $ if b then (r-0.08,x,y) else (r,x,y) 
     
     moveUp :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
     moveUp    b (r,x,y) = 

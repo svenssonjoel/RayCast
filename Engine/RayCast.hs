@@ -99,11 +99,11 @@ castRay vc world lights (pos,angle) column =
     
 --    (dist', texValue, texCol,(inR,inG,inB)) = castRay2 vc world lights 0.0 ray 
     
-   
-lightContribution (px,py) (Light  lx ly   inR' inG' inB' ) = (inR,inG,inB)    
+lightContribution :: Point2D -> Light -> (Float,Float,Float)   
+lightContribution pos (Light lx ly inR' inG' inB' ) = (inR,inG,inB)    
   where
     -- How to really compute light contribution? 
-    lightdist = (distance (px,py) (lx,ly)) 
+    lightdist = distance pos (mkPoint (lx,ly))
     ld = 1/(0.02*lightdist)
     (inR,inG,inB) = (inR'*ld,
                      inG'*ld,
@@ -132,7 +132,7 @@ castRay2 vc world lights accDist ray =
             return (accDist+dist,value,offs,(inR,inG,inB)) 
         else 
           -- Continue along the ray 
-          castRay2 vc world lights (accDist+dist) (Ray (px ,py) (rayDeltas ray))
+          castRay2 vc world lights (accDist+dist) (Ray posIntersect{-(px ,py)-} (rayDeltas ray))
 
         
   where 
@@ -145,8 +145,10 @@ castRay2 vc world lights accDist ray =
                   
     
     -- Create two lines for intersection test
-    x_line = Line (fromIntegral grid_x,0) (fromIntegral grid_x,1) 
-    y_line = Line (0,fromIntegral grid_y) (1,fromIntegral grid_y)  
+    x_line = Line (mkPoint (fromIntegral grid_x,0)) 
+                  (mkPoint (fromIntegral grid_x,1)) 
+    y_line = Line (mkPoint (0,fromIntegral grid_y)) 
+                  (mkPoint (1,fromIntegral grid_y))  
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
@@ -155,16 +157,17 @@ castRay2 vc world lights accDist ray =
     
     
     
-    
-    ((px,py),dist,offs)  = 
+    (px,py) = (point2DGetX posIntersect, 
+               point2DGetY posIntersect)
+    (posIntersect,dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(snd p .&. modMask vc)) -- `mod` wallWidth vc) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(fst p .&. modMask vc)) -- <`mod` wallWidth vc) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(point2DGetY p .&. modMask vc)) -- `mod` wallWidth vc) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(point2DGetX p .&. modMask vc)) -- <`mod` wallWidth vc) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1,(snd p .&. modMask vc)) -- `mod` wallWidth vc) ) 
-             else (q,d2,(fst q .&. modMask vc)) -- `mod` wallWidth vc) ) 
+             then (p,d1,(point2DGetY p .&. modMask vc)) -- `mod` wallWidth vc) ) 
+             else (q,d2,(point2DGetX q .&. modMask vc)) -- `mod` wallWidth vc) ) 
 

@@ -24,7 +24,7 @@ data Sprite = Sprite { spritePos       :: Point2D,      -- world x,y pos
 viewTransformSprite :: ViewConfig -> View -> Sprite -> Maybe RItem
 viewTransformSprite vc (viewPos,viewAngle) spr  
   | ry > 0 = --(using > in place of >= fixed a visible glitch) 
-    Just $ RItem (projx_,viewportCenterY vc -(mh `div` 2)) 
+    Just $ RItem (mkPoint (projx_,viewportCenterY vc -(mh `div` 2)))
                  (spritePos spr)
                  (mw,mh) 
                  (spriteTexture spr) 
@@ -33,7 +33,8 @@ viewTransformSprite vc (viewPos,viewAngle) spr
   | otherwise = Nothing 
           
   where 
-    (mx',my') = spritePos spr `vecSub` viewPos 
+    -- TODO: Improve!! 
+    (Point2D mx' my') = spritePos spr - viewPos 
     (mx,my)   = (fromIntegral mx',fromIntegral my')
     rx      = fromIntegral$ floori_$ mx * cos (-viewAngle) - my * sin (-viewAngle) 
     ry      = fromIntegral$ floori_$ my * cos (-viewAngle) + mx * sin (-viewAngle) 
