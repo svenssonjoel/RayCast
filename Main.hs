@@ -234,8 +234,6 @@ lerpRows_ vc world lights slices tps surf p1x p1y p2x p2y =
 lerpRows_2 :: ViewConfig 
              -> MapType 
              -> Lights
-           --  -> Ptr Light 
-           --  -> Int32
              -> [Int32] 
              -> [(Pixels,Int32)] 
              -> Surface 
