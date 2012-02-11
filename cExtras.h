@@ -23,10 +23,10 @@ void texturedVLineLit(int x, int y1, int y2, SDL_Surface *surf,
 
 void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, 
                  SDL_Surface *text, 
-		 float inR,
-                 float inG, 
-                 float inB, 
-		 float depth, float *depths);
+		 float depth, float *depths,
+		 int wx, int wy, 
+		 light *lights, 
+		 int32_t num_lights);
   
 void texPoint(int tx, int ty, int tw, int32_t *text,
               int x, int y, int w, int32_t *surf, 

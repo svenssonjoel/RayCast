@@ -91,10 +91,10 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
 
 void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect and surface 
                  SDL_Surface *text, 
-                 float inR, 
-		 float inG, 
-		 float inB, 
-                 float depth, float *depths) { // sprite image and depth and world depths 
+                 float depth, float *depths,
+		 int wx, int wy,
+                 light *lights, 
+	         int32_t num_lights) { 
   
   int width   = surf->w;
   int height  = surf->h;
@@ -129,8 +129,27 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
   int j;
   int i; 
  
-  //  float intensity = fmin(1.0,32768.0/(depth*depth));
+  // COMPLETELY INLINED LIGHT COMPUTATION 
+  float inR = 0.0;
+  float inG = 0.0;
+  float inB = 0.0; 
+  int l;
 
+  for (l = 0; l < num_lights; l++) {
+      
+    float xd = lights[l].lx - wx;
+    float yd = lights[l].ly - wy;
+    double dist = sqrt (xd*xd + yd*yd);// / 256;
+    double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
+    inR += lights[l].inR * ld; 
+    inG += lights[l].inG * ld; 
+    inB += lights[l].inB * ld; 
+	
+  } 
+  inR = fmin(1.0,inR);
+  inG = fmin(1.0,inG);
+  inB = fmin(1.0,inB);
+  // LIGHTS DONE
 
   for (j = 0; j < clippedH; j++) { 
     for (i = 0; i < clippedW; i++) {
@@ -215,6 +234,8 @@ void lerpRow(int32_t wallWidth,
     int32_t  ti = map[wx  + wy * 16]; 
     int32_t* tp = textures[ti];
     
+
+    // COMPLETELY INLINED LIGHT COMPUTATION 
     float inR = 0.0;
     float inG = 0.0;
     float inB = 0.0; 
@@ -223,17 +244,17 @@ void lerpRow(int32_t wallWidth,
       
       float xd = lights[l].lx - inx;
       float yd = lights[l].ly - iny;
-      double dist = sqrt (xd*xd + yd*yd) / 256;
-      //double ld = 1 / fmax(0.01,(dist*dist));
+      double dist = sqrt (xd*xd + yd*yd);// / 256;
       double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
-      inR += fmin(1.0, lights[l].inR * ld); 
-      inG += fmin(1.0, lights[l].inG * ld); 
-      inB += fmin(1.0, lights[l].inB * ld); 
+      inR += lights[l].inR * ld; 
+      inG += lights[l].inG * ld; 
+      inB += lights[l].inB * ld; 
 	
     } 
     inR = fmin(1.0,inR);
     inG = fmin(1.0,inG);
     inB = fmin(1.0,inB);
+    // LIGHTS DONE
     
     
     texPoint(tx,ty,256,tp,

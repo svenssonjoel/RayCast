@@ -109,10 +109,11 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
    convSurface* `Surface' , 
    convSurface* `Surface' ,
    realToFrac   `Float' ,
-   realToFrac   `Float' ,
-   realToFrac   `Float' , 
-   realToFrac   `Float' ,
-   fromZBuffer  `ZBuffer' } -> `()' id #}
+   fromZBuffer  `ZBuffer', 
+   fromIntegral `Int32' , 
+   fromIntegral `Int32' ,
+   castPtr      `Ptr Light' ,
+   fromIntegral `Int32' } -> `()' id #}
 
 
 -- void texPoint(int tx, int ty, int tw, int32_t *text,

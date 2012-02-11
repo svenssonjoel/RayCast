@@ -13,10 +13,7 @@ import Graphics.UI.SDL
 import Engine.Math
 import Engine.RayCast
 import Engine.ZBuffer
-
---import Foreign.Ptr
---import Foreign.Storable
---import Foreign.Marshal.Array
+import Engine.Light
 
 import Data.Int
 import Data.Word
@@ -32,28 +29,32 @@ data RItem = RItem { rItemPos  :: Point2D, -- position on screen
                      rItemWorldPos :: Point2D,  
                      rItemDims :: (Int32,Int32),
                      rItemTexture :: Surface, 
-                     rItemDepth   :: Float,
-                     rItemIntensityR :: Float,
-                     rItemIntensityG :: Float,
-                     rItemIntensityB :: Float} -- distance from Viewer (used for clipping against walls) 
-                     
+                     rItemDepth   :: Float}
+                 
 sortRItems = sortBy depth 
   where 
+    -- want to draw things with large depth before things
+    -- with small depth (Painters algorithm) 
     depth r1 r2 = compare (rItemDepth r2) (rItemDepth r1) 
 
                                    
-renderRItem :: Surface -> ZBuffer -> RItem -> IO () 
-renderRItem surf dists ritem = 
+renderRItem :: Surface -> ZBuffer -> Lights -> RItem -> IO () 
+renderRItem surf dists lights ritem = 
   renderRItemC_ x y w h surf (rItemTexture ritem) 
-                             (rItemIntensityR ritem) 
-                             (rItemIntensityG ritem)
-                             (rItemIntensityB ritem)
                              dist dists
+                             wx wy
+                             (lightsPtr lights)
+                             (lightsNum lights)
+
+  
+  
   where 
     x = fst $ rItemPos ritem                 
     y = snd $ rItemPos ritem 
     w = fst $ rItemDims ritem
     h = snd $ rItemDims ritem
+    wx = fst $ rItemWorldPos ritem
+    wy = snd $ rItemWorldPos ritem
     dist = rItemDepth ritem 
 
 

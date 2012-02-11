@@ -21,15 +21,15 @@ data Sprite = Sprite { spritePos       :: Point2D,      -- world x,y pos
 
 ----------------------------------------------------------------------------
 -- World space object to screen space renderable object 
-viewTransformSprite :: ViewConfig -> [Light] -> View -> Sprite -> Maybe RItem
-viewTransformSprite vc lights (viewPos,viewAngle) spr  
+viewTransformSprite :: ViewConfig -> View -> Sprite -> Maybe RItem
+viewTransformSprite vc (viewPos,viewAngle) spr  
   | ry > 0 = --(using > in place of >= fixed a visible glitch) 
     Just $ RItem (projx_,viewportCenterY vc -(mh `div` 2)) 
                  (spritePos spr)
                  (mw,mh) 
                  (spriteTexture spr) 
                  (ry) -- dist
-                 inR inG inB 
+                 -- inR inG inB 
   | otherwise = Nothing 
           
   where 
@@ -42,7 +42,7 @@ viewTransformSprite vc lights (viewPos,viewAngle) spr
     -- Compute light 
     -- TODO: move lighting computation to renderRItem 
     --       This means RITem needs to contain world position as well. 
-    (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (spritePos spr))  lights)
+    -- (inR,inG,inB) = clamp 1.0 $ foldl vec3add (0,0,0) (map (lightContribution (spritePos spr))  lights)
   
     
     

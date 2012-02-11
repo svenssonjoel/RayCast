@@ -13,7 +13,7 @@
   **************************************
   This is also an exercise in using SDL. 
   
-  Early problems in using SDL is. 
+  Early problems in using SDL are 
     - SDL is low level! 
        It expects you to implement your own graphics routines 
        on the supplied "surfaces" and pixels thereof. This is Ok 
@@ -181,8 +181,6 @@ newFloorCast2 vc world lights slices view textures surf =
 newFloorCast3 :: ViewConfig 
                  -> MapType 
                  -> Lights 
-                -- -> Ptr Light
-                --  -> Int32
                  -> [Int32]
                  -> View 
                  -> [Surface] 
@@ -418,7 +416,9 @@ main = do
   screen <- getVideoSurface
   -- toggleFullscreen screen
   
-  putStrLn$ arr2dStr$ testLevelArr
+
+  -- disable tracking of mousemotion events 
+  enableEvent SDLMouseMotion False
   
   let pf = surfaceGetPixelFormat screen
                        
@@ -452,11 +452,10 @@ main = do
 
   
   monster <- conv pf =<< loadBMP "Data/Eye1.bmp"  
-  --monster <- conv pf =<< loadBMP "Data/eye1.bmp"  
   let monsterSprite = [Sprite ((x+5)*256+128,(y+1)*256+128)
                               0
                               (256,256) 
-                              monster | x <- [0..10], y <- [0]] 
+                              monster | x <- [0..10], y <- [0..10]] 
                    
   
                  
@@ -487,29 +486,31 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,x
                 [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (0.0,1.0,0.0) 
                 | i <- [0], j <- [0]])
                
-  slices <- withLights lights $ \lights' ->              
+  withLights lights $ \lights' ->              
     do 
-       sli <- renderWalls vc
-                          testLevelArr 
-                          lights' 
-                          ((x,y),r) 
-                          wallTextures 
-                          screen
-       newFloorCast3 vc testLevelFloorArr lights' (map sliceBot sli) ((x,y),r) floorTextures screen                                     
-       return sli
+       sl <- renderWalls vc
+                         testLevelArr 
+                         lights' 
+                         ((x,y),r) 
+                         wallTextures 
+                         screen
+                         
+       let dists  = map sliceDistance sl
+           bots   = map sliceBot      sl 
+       newFloorCast3 vc testLevelFloorArr lights' bots ((x,y),r) floorTextures screen                                     
+
        
-  let dists  = map sliceDistance slices
-  
-  let monsterTfrmd = sortRItems $ 
-                     catMaybes $ 
-                     map (viewTransformSprite vc lights ((x,y),r)) monster    
-  
-  -- sort monsters or update the zbuffer. (probably stick to sort) 
-      
-  withZBuffer dists (\zbuf -> 
-                      sequence_ $ map (renderRItem screen zbuf) monsterTfrmd
-                    )
-  
+       let monsterTfrmd = sortRItems $ 
+                          catMaybes $ 
+                          map (viewTransformSprite vc ((x,y),r)) monster    
+       
+       withZBuffer dists $ \zbuf -> 
+         sequence_ $ map (renderRItem screen zbuf lights') monsterTfrmd
+                    
+                             
+       
+       
+    
   SDL.flip screen
   
   -- process events 
