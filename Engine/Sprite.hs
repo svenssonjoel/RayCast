@@ -26,7 +26,7 @@ viewTransformSprite vc (viewPos,viewAngle) spr
   | ry > 0 = --(using > in place of >= fixed a visible glitch) 
     Just $ RItem (mkPoint (projx_,viewportCenterY vc -(mh `div` 2)))
                  (spritePos spr)
-                 (mw,mh) 
+                 (mkDims (mw,mh)) 
                  (spriteTexture spr) 
                  (ry) -- dist
                  -- inR inG inB 

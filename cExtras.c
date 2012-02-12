@@ -12,6 +12,7 @@
 #include "cExtras.h"
 
 #define LINEAR_ATTENUATION 0.02 
+#define DIST_NUDGE(x) (x+0.0001)
 
 /* -----------------------------------------------------------------------------
 
@@ -89,6 +90,99 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
    Render a textured billboarded 2D sprite  (called RItem in the Haskell code) 
    -------------------------------------------------------------------------- */
 
+void renderRItem(Point2D_int *p, Dims2D *d, SDL_Surface *surf, // Target rect and surface 
+                 SDL_Surface *text, 
+                 float depth, float *depths,
+		 Point2D_int *wp,
+                 light *lights, 
+	         int32_t num_lights) { 
+  int32_t x = p->x;
+  int32_t y = p->y;
+  int32_t w = d->w;
+  int32_t h = d->h;
+  int32_t wx = wp->x;
+  int32_t wy = wp->y;
+  int width   = surf->w;
+  int height  = surf->h;
+  int columns = text->w;
+  int rows    = text->h;
+
+  // if completely outside of target, just skip.
+  if (x > width || y > height || x < -w || y < -h) return; 
+  
+  int32_t *targPixels = (int32_t*)surf->pixels;
+  int32_t *srcPixels  = (int32_t*)text->pixels;
+  
+  int x1 = x < 0 ? 0 : x;
+  int y1 = y < 0 ? 0 : y;
+ 
+  int x2 = (x+w) >= width  ? width-1  : x+w;
+  int y2 = (y+h) >= height ? height-1 : y+h; 
+  
+
+  int clippedW = x2-x1;
+  int clippedH = y2-y1;
+  // if (!clippedW || !clippedH) return; // should not matter (very rare!) 
+
+  int start = x1 + y1 * width;
+
+  float rx = (float)columns / w;
+  float ry = (float)rows / h; 
+
+  int xJump = (rx * (float)(x1-x));
+  int yJump = (ry * (float)(y1-y)); 
+
+  int j;
+  int i; 
+ 
+  // COMPLETELY INLINED LIGHT COMPUTATION 
+  float inR = 0.0;
+  float inG = 0.0;
+  float inB = 0.0; 
+  int l;
+
+  for (l = 0; l < num_lights; l++) {
+      
+    float xd = lights[l].lx - wx;
+    float yd = lights[l].ly - wy;
+    double dist = sqrt (xd*xd + yd*yd);
+    // offset distance slightly to ensure no div by zero
+    double ld = 1 / (LINEAR_ATTENUATION*(DIST_NUDGE(dist)));  
+    inR += lights[l].inR * ld; 
+    inG += lights[l].inG * ld; 
+    inB += lights[l].inB * ld; 
+	
+  } 
+  inR = fmin(1.0,inR);
+  inG = fmin(1.0,inG);
+  inB = fmin(1.0,inB);
+  // LIGHTS DONE
+
+  for (j = 0; j < clippedH; j++) { 
+    for (i = 0; i < clippedW; i++) {
+      int32_t p = srcPixels[(xJump+(int)(i*rx))+
+			    columns * (yJump + (int)(j*ry))];
+
+      if (depth >= depths[x1+i]) continue; 
+
+      unsigned char *p_ = (unsigned char*)&p;
+      
+      if (p_[3] != 0) { 	
+	p_[0] *= inB;
+	p_[1] *= inG;
+	p_[2] *= inR; 
+       
+	// write the now updated p to target. 
+	targPixels[start+(i+width*j)] = p;
+      }
+     
+    }
+
+  }
+  
+}
+
+/*
 void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect and surface 
                  SDL_Surface *text, 
                  float depth, float *depths,
@@ -141,7 +235,7 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
     float yd = lights[l].ly - wy;
     double dist = sqrt (xd*xd + yd*yd);
     // offset distance slightly to ensure no div by zero
-    double ld = 1 / (LINEAR_ATTENUATION*(dist+0.0001));  
+    double ld = 1 / (LINEAR_ATTENUATION*(DIST_NUDGE(dist)));  
     inR += lights[l].inR * ld; 
     inG += lights[l].inG * ld; 
     inB += lights[l].inB * ld; 
@@ -175,7 +269,7 @@ void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, // Target rect a
   }
   
 }
-
+*/
 
 void texPoint(int tx, int ty, int tw, int32_t *text,
               int x, int y, int w, int32_t *surf, 
@@ -246,7 +340,7 @@ void lerpRow(int32_t wallWidth,
       float xd = lights[l].lx - inx;
       float yd = lights[l].ly - iny;
       double dist = sqrt (xd*xd + yd*yd);// / 256;
-      double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
+      double ld = 1 / (LINEAR_ATTENUATION*DIST_NUDGE(dist)); // fmax(0.01,(dist*dist));
       inR += lights[l].inR * ld; 
       inG += lights[l].inG * ld; 
       inB += lights[l].inB * ld; 
@@ -333,8 +427,8 @@ void lerpRows(int32_t wallWidth,
       for (l = 0; l < num_lights; l++) {
 	float xd = lights[l].lx - inx;
 	float yd = lights[l].ly - iny;
-	double dist = sqrt (xd*xd + yd*yd); //  / 256;
-	double ld = 1 / (LINEAR_ATTENUATION*dist); // fmax(0.01,(dist*dist));
+	double dist = sqrt (xd*xd + yd*yd); 
+	double ld = 1 / (LINEAR_ATTENUATION*(DIST_NUDGE(dist))); // fmax(0.01,(dist*dist));
 	inR += lights[l].inR * ld; 
 	inG += lights[l].inG * ld; 
 	inB += lights[l].inB * ld; 
@@ -372,7 +466,7 @@ void computeLight(float *r,
     int32_t xd = lights[l].lx - px;
     int32_t yd = lights[l].ly - py;
     double dist = sqrt (xd*xd + yd*yd);
-    double ld = 1 / (LINEAR_ATTENUATION*dist); 
+    double ld = 1 / (LINEAR_ATTENUATION*(DIST_NUDGE(dist))); 
     inR += lights[l].inR * ld; 
     inG += lights[l].inG * ld; 
     inB += lights[l].inB * ld; 

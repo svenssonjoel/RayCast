@@ -10,6 +10,15 @@ typedef struct {
 } light; 
 
 
+typedef struct { 
+  int32_t x; 
+  int32_t y; 
+} Point2D_int; 
+
+typedef struct { 
+  int32_t w; 
+  int32_t h; 
+} Dims2D; 
 
 
 void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
@@ -21,12 +30,21 @@ void texturedVLineLit(int x, int y1, int y2, SDL_Surface *surf,
 		      float intensityG, 
 		      float intensityB);
 
-void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, 
+void renderRItem(Point2D_int *p, Dims2D *dim, SDL_Surface *surf, 
+                 SDL_Surface *text, 
+		 float depth, float *depths,
+		 Point2D_int *wp, 
+		 light *lights, 
+		 int32_t num_lights);
+
+/*void renderRItem(int x, int y, int w, int h, SDL_Surface *surf, 
                  SDL_Surface *text, 
 		 float depth, float *depths,
 		 int wx, int wy, 
 		 light *lights, 
-		 int32_t num_lights);
+		 int32_t num_lights);*/
+
+
   
 void texPoint(int tx, int ty, int tw, int32_t *text,
               int x, int y, int w, int32_t *surf, 

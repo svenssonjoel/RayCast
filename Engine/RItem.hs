@@ -25,11 +25,11 @@ import CExtras
 import MathExtras
 
 -- An objected projected onto screen 
-data RItem = RItem { rItemPos  :: Point2D, -- position on screen
+data RItem = RItem { rItemPos      :: Point2D, -- position on screen
                      rItemWorldPos :: Point2D,  
-                     rItemDims :: (Int32,Int32),
-                     rItemTexture :: Surface, 
-                     rItemDepth   :: Float}
+                     rItemDims     :: Dims2D,
+                     rItemTexture  :: Surface, 
+                     rItemDepth    :: Float}
                  
 sortRItems = sortBy depth 
   where 
@@ -40,21 +40,18 @@ sortRItems = sortBy depth
                                    
 renderRItem :: Surface -> ZBuffer -> Lights -> RItem -> IO () 
 renderRItem surf dists lights ritem = 
-  renderRItemC_ x y w h surf (rItemTexture ritem) 
+  renderRItemC_ pos dim surf (rItemTexture ritem) 
                              dist dists
-                             wx wy
+                             wPos
                              (lightsPtr lights)
                              (lightsNum lights)
 
   
   
   where 
-    x = point2DGetX $ rItemPos ritem                 
-    y = point2DGetY $ rItemPos ritem 
-    w = fst $ rItemDims ritem
-    h = snd $ rItemDims ritem
-    wx = point2DGetX $ rItemWorldPos ritem
-    wy = point2DGetY $ rItemWorldPos ritem
+    pos = rItemPos ritem
+    dim = rItemDims ritem
+    wPos = rItemWorldPos ritem
     dist = rItemDepth ritem 
 
 

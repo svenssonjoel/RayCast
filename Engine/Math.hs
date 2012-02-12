@@ -11,15 +11,20 @@ import MathExtras
 type Angle = Float 
 
 data Point2D = Point2D {point2DGetX :: !Int32, 
-                          point2DGetY :: !Int32}
+                        point2DGetY :: !Int32}
               deriving (Eq,Show)
                        
 mkPoint (x,y) = Point2D x y                       
 data Vector2D = Vector2D {vector2DGetX :: !Int32, 
-                            vector2DGetY :: !Int32}
+                          vector2DGetY :: !Int32}
                deriving (Eq,Show)
                         
 mkVector (x,y) = Vector2D x y                         
+
+data Dims2D = Dims2D {dims2DGetW :: !Int32,
+                      dims2DGetH :: !Int32} 
+              deriving (Eq,Show)
+mkDims (w,h) = Dims2D w h
 
 instance Storable Point2D where
   sizeOf _  = sizeOf (undefined :: Int32) * 2 
@@ -60,6 +65,17 @@ instance Num Vector2D where
   signum = undefined 
   fromInteger i = Vector2D (fromInteger i) 0 
   
+instance Storable Dims2D where
+  sizeOf _  = sizeOf (undefined :: Int32) * 2 
+  alignment _ = 4
+  peek p = do 
+    w <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt)
+    h <- fromIntegral `fmap` (peekByteOff p 4 :: IO CInt) 
+    return $ Dims2D w h 
+  poke p (Dims2D w h) = do 
+    pokeByteOff p 0 (fromIntegral w :: CInt) 
+    pokeByteOff p 4 (fromIntegral h :: CInt)
+
   
 
 
@@ -94,9 +110,22 @@ distance p1 p2 =
 ----------------------------------------------------------------------------
 -- Rays 
 
-data Ray = Ray {rayStart  :: Point2D,
-                rayDeltas :: Vector2D}  
+data Ray = Ray {rayStart  :: !Point2D,
+                rayDeltas :: !Vector2D}  
            -- point direction repr 
+           
+instance Storable Ray where 
+  sizeOf (Ray p d)  = sizeOf p + sizeOf d 
+  alignment _ = 4 -- Again ?? 
+  peek ptr = do 
+    p <- (peekByteOff ptr 0 :: IO Point2D)
+    d <- (peekByteOff ptr (sizeOf (undefined :: Point2D)) :: IO Vector2D) 
+    return $ Ray p d 
+  poke ptr (Ray p d) = do 
+    pokeByteOff ptr 0 p
+    pokeByteOff ptr (sizeOf (undefined :: Point2D))  d
+
+
 
 mkRay :: Point2D -> Angle -> Ray 
 mkRay p r = Ray p 
@@ -116,7 +145,18 @@ rayY  r = point2DGetY $ rayStart r
 ----------------------------------------------------------------------------
 -- Lines 
 
-data Line = Line Point2D Point2D -- 2 points on the line  
+data Line = Line !Point2D !Point2D -- 2 points on the line  
+
+instance Storable Line where 
+  sizeOf (Line p1 p2)  = sizeOf p1 + sizeOf p2
+  alignment _ = 4 -- Again ?? 
+  peek ptr = do 
+    p1 <- (peekByteOff ptr 0 :: IO Point2D)
+    p2 <- (peekByteOff ptr (sizeOf (undefined :: Point2D)) :: IO Point2D) 
+    return $ Line p1 p2 
+  poke ptr (Line p1 p2) = do 
+    pokeByteOff ptr 0 p1
+    pokeByteOff ptr (sizeOf (undefined :: Point2D))  p2
 
 mkLine = Line 
 

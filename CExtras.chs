@@ -9,6 +9,7 @@ import Foreign.ForeignPtr
 import Foreign.Storable -- ing (sizeOf)
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
+import Foreign.Marshal.Utils
 import Data.Array.Storable
 import Data.Word
 import Data.Int
@@ -17,12 +18,13 @@ import System.IO.Unsafe
 import Control.Monad
 import Control.Applicative
 
-import Graphics.UI.SDL
+import Graphics.UI.SDL hiding (with)
 
 
 -- Divide cExtras into smaller modules ?
 import Engine.ZBuffer 
 import Engine.Map 
+import Engine.Math
 
 #include "cExtras.h" 
 
@@ -58,7 +60,11 @@ convLight l f = do
   withArray l $ \ptr -> (f (castPtr ptr)) 
   
 withPixels ps f = 
-  withArray ps $ \ptr -> (f (castPtr ptr))
+  withArray ps $ \ptr -> f (castPtr ptr)
+                                                  
+-- why do I needs all these "castPtr"s everywhere ?
+withPoint p f = with p $ \ptr -> f (castPtr ptr)
+withDims  p f = with p $ \ptr -> f (castPtr ptr)
                           
 withMap (MapType w arr) f = 
   withStorableArray arr $ \ptr -> f (castPtr ptr)
@@ -102,6 +108,17 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
 --   withFloatArray* `[Float]' } -> `()' id #}
 
 {# fun unsafe renderRItem as renderRItemC_ 
+ { withPoint* `Point2D' ,
+   withDims*  `Dims2D' ,
+   convSurface* `Surface' , 
+   convSurface* `Surface' ,
+   realToFrac   `Float' ,
+   fromZBuffer  `ZBuffer', 
+   withPoint*   `Point2D' ,
+   castPtr      `Ptr Light' ,
+   fromIntegral `Int32' } -> `()' id #}
+
+{-{# fun unsafe renderRItem as renderRItemC_ 
  { fromIntegral `Int32' ,
    fromIntegral `Int32' ,
    fromIntegral `Int32' ,
@@ -114,6 +131,8 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
    fromIntegral `Int32' ,
    castPtr      `Ptr Light' ,
    fromIntegral `Int32' } -> `()' id #}
+-}
+
 
 
 -- void texPoint(int tx, int ty, int tw, int32_t *text,
