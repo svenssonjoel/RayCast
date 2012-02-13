@@ -28,6 +28,7 @@ import Engine.Math
 
 #include "cExtras.h" 
 
+---------------------------------------------------------------------------- 
 type Pixels = Ptr Int32
 
 data Light = Light !Int32 !Int32 
@@ -53,6 +54,37 @@ instance Storable Light where
     {#set light.inG #} p (realToFrac $ g) 
     {#set light.inB #} p (realToFrac $ b) 
 
+
+data ViewConfig = 
+  ViewConfig { vcViewDistance :: Int32,
+               vcViewHeight   :: Int32, -- dims ? (use Dims type?)
+               vcWindowWidth  :: Int32, 
+               vcWindowHeight :: Int32, 
+               vcWallDims     :: (Int32,Int32) } -- dims ? 
+  
+instance Storable ViewConfig where 
+  sizeOf _ = sizeOf (undefined :: Int32) * 6
+  alignment _ = 4 -- ? 
+  peek p = do 
+    viewd <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt) 
+    viewh <- fromIntegral `fmap` (peekByteOff p s :: IO CInt) 
+    winw <-  fromIntegral `fmap` (peekByteOff p (2*s) :: IO CInt)
+    winh <-  fromIntegral `fmap` (peekByteOff p (3*s) :: IO CInt)
+    wallw <- fromIntegral `fmap` (peekByteOff p (4*s) :: IO CInt)
+    wallh <- fromIntegral `fmap` (peekByteOff p (5*s) :: IO CInt)
+    return $ ViewConfig viewd viewh winw winh (wallw,wallh) 
+    where s = sizeOf (undefined :: CInt) 
+  poke p (ViewConfig a b c d (e,f)) = do           
+    pokeByteOff p 0 (fromIntegral a :: CInt) 
+    pokeByteOff p s (fromIntegral b :: CInt)
+    pokeByteOff p (2*s) (fromIntegral c :: CInt)
+    pokeByteOff p (3*s) (fromIntegral d :: CInt)
+    pokeByteOff p (4*s) (fromIntegral e :: CInt)
+    pokeByteOff p (5*s) (fromIntegral f :: CInt)
+    where s = sizeOf (undefined :: CInt)
+    
+
+---------------------------------------------------------------------------- 
 convSurface s f = do 
   withForeignPtr  s $ \ptr -> (f (castPtr ptr))
   
@@ -65,13 +97,19 @@ withPixels ps f =
 -- why do I needs all these "castPtr"s everywhere ?
 withPoint p f = with p $ \ptr -> f (castPtr ptr)
 withDims  p f = with p $ \ptr -> f (castPtr ptr)
+withViewConfig p f = with p $ \ptr -> f (castPtr ptr)
                           
 withMap (MapType w arr) f = 
   withStorableArray arr $ \ptr -> f (castPtr ptr)
   
-withIntArray xs = withArray (fmap fromIntegral xs)  
-withFloatArray xs = withArray (fmap realToFrac xs)
- 
+--withIntArray xs = withArray (fmap fromIntegral xs)  
+--withFloatArray xs = withArray (fmap realToFrac xs)
+withIntArray xs f = withArray xs $ \ptr -> f (castPtr ptr)
+withFloatArray xs f = withArray xs $ \ptr -> f (castPtr ptr)
+
+
+withRealLineArray xs f = withArray xs $ \ptr -> f (castPtr ptr)
+                    
 peekFloat ptr = realToFrac `fmap`  peek ptr                    
 
 {# fun unsafe texturedVLine as texVLine 
@@ -187,7 +225,7 @@ void lerpRow(int32_t wallWidth,
     realToFrac   `Float' ,
     realToFrac   `Float' } -> `()' id #}
 
-
+{-
 {# fun unsafe lerpRows as lerpRowsC 
   { fromIntegral `Int32' , 
     fromIntegral `Int32' , 
@@ -204,8 +242,9 @@ void lerpRow(int32_t wallWidth,
     withFloatArray*   `[Float]' ,
     withFloatArray*   `[Float]' ,
     withFloatArray*   `[Float]' } -> `()' id #}
+-}
 
-
+{-
 {# fun unsafe lerpRows as lerpRowsC_ 
   { fromIntegral `Int32' , 
     fromIntegral `Int32' , 
@@ -222,8 +261,19 @@ void lerpRow(int32_t wallWidth,
     withFloatArray*   `[Float]' ,
     withFloatArray*   `[Float]' ,
     withFloatArray*   `[Float]' } -> `()' id #}
-    
-    
+-}     
+{# fun unsafe lerpRows as lerpRowsC_ 
+  { withViewConfig* `ViewConfig' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    withMap*     `MapType' , 
+    withIntArray* `[Int32]' , 
+    withPixels*  `[Pixels]', 
+    convSurface* `Surface' ,
+    castPtr      `Ptr Light' ,
+    fromIntegral `Int32' , 
+    withRealLineArray* `[RealLine]'  } -> `()' id #}    
+
     
 
 {# fun unsafe computeLight as computeLight

@@ -15,6 +15,7 @@ import Engine.RGB
 import MathExtras 
 
 import Foreign.Storable
+import Foreign.C.Types
 import Foreign.Ptr
 
 import Prelude hiding ((!!)) 
@@ -26,12 +27,13 @@ import CExtras
 ----------------------------------------------------------------------------
 -- ViewConfiguration
 
-data ViewConfig = 
-  ViewConfig { vcViewDistance :: Int32,
-               vcViewHeight   :: Int32,
-               vcWindowWidth  :: Int32, 
-               vcWindowHeight :: Int32, 
-               vcWallDims     :: (Int32,Int32) } 
+-- MOVED INTO CExtras.chs 
+--data ViewConfig = 
+--  ViewConfig { vcViewDistance :: Int32,
+--               vcViewHeight   :: Int32, -- dims ? (use Dims type?)
+--               vcWindowWidth  :: Int32, 
+--               vcWindowHeight :: Int32, 
+--               vcWallDims     :: (Int32,Int32) } -- dims ? 
   
 mkViewConfig = ViewConfig 
 
@@ -43,6 +45,8 @@ wallHeight = snd . vcWallDims
 
 gridMask = negate . modMask  
 modMask  vc = wallWidth vc - 1  
+
+
 
 ----------------------------------------------------------------------------
 -- Slices 

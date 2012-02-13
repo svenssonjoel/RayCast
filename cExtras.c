@@ -365,10 +365,11 @@ void lerpRow(int32_t wallWidth,
 }
 	     
 
-void lerpRows(int32_t wallWidth, 
-	      int32_t modMask,
-	      int32_t windowWidth, // things from ViewConfig that matters to this fun
-	     
+void lerpRows(//int32_t wallWidth, 
+	      //int32_t modMask,
+	      //int32_t windowWidth, // things from ViewConfig that matters to this fun
+	      ViewConfig *vc,
+
 	      int32_t mapW, 
 	      int32_t mapH, 
 	      int32_t *map,
@@ -379,9 +380,13 @@ void lerpRows(int32_t wallWidth,
 	      light *lights, 
 	      int32_t num_lights,
 	     
-	      float   *p1xa, float *p1ya, 
-	      float   *p2xa, float *p2ya) {
-
+              RealLine *rl){ 
+	      //float   *p1xa, float *p1ya, 
+	      //float   *p2xa, float *p2ya) {
+  
+  int32_t wallWidth = vc->wallWidth;
+  int32_t modMask   = wallWidth - 1;
+  int32_t windowWidth = vc->windowWidth;
 
   int32_t *sp = (int32_t*)surf->pixels;
   int yi; //  = 300; 
@@ -393,10 +398,10 @@ void lerpRows(int32_t wallWidth,
     int yww_ = (599-y)*windowWidth;
 
     // the line being interpolated
-    float p1x = p1xa[yi];
-    float p1y = p1ya[yi];
-    float p2x = p2xa[yi]; 
-    float p2y = p2ya[yi];
+    float p1x =  rl[yi].x1;//p1xa[yi];
+    float p1y =  rl[yi].y1;//p1ya[yi];
+    float p2x =  rl[yi].x2;//p2xa[yi]; 
+    float p2y =  rl[yi].y2;//p2ya[yi];
 
     float inR = 0.0;
     float inG = 0.0;

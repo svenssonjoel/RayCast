@@ -190,21 +190,14 @@ newFloorCast3 :: ViewConfig
                  -> IO ()
 newFloorCast3 vc world lights slices view textures surf = 
   do 
-    
     tps <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
-    lerpRows_2 vc world lights slices tps surf x1s y1s x2s y2s 
+    lerpRows_2 vc world lights slices tps surf rl 
                
-  where 
-    -- TODO: Storable points. 
-    -- TODO: Storable Pairs of points. (lines)  
-    (x1s,y1s) = unzip edgeL
-    (x2s,y2s) = unzip edgeR
-    
-    edgeL = [newFloorCastPoint vc world view x1 y
-            | y <- [0..(viewportCenterY vc-1)]] 
-    edgeR = [newFloorCastPoint vc world view x2 y
-            | y <- [0..(viewportCenterY vc-1)]] 
-    
+  where                 
+    rl =  [mkRealLine (newFloorCastPoint vc world view x1 y)                 
+                      (newFloorCastPoint vc world view x2 y) 
+           | y <- [0..(viewportCenterY vc - 1)]]
+                    
     x1 = 0;
     x2 = vcWindowWidth vc - 1 
 
@@ -233,6 +226,7 @@ lerpRows_ vc world lights slices tps surf p1x p1y p2x p2y =
                   p2x p2y
 
 -} 
+{-
 lerpRows_2 :: ViewConfig 
              -> MapType 
              -> Lights
@@ -254,7 +248,24 @@ lerpRows_2 vc world lights slices tps surf p1x p1y p2x p2y =
                   (lightsNum lights) -- (fromIntegral (length lights))
                   p1x p1y
                   p2x p2y
-
+-} 
+lerpRows_2 :: ViewConfig 
+             -> MapType 
+             -> Lights
+             -> [Int32] 
+             -> [(Pixels,Int32)] 
+             -> Surface 
+             -> [RealLine] 
+             -> IO ()     
+lerpRows_2 vc world lights slices tps surf rl = 
+         lerpRowsC_  vc -- (wallWidth vc) (modMask vc) (vcWindowWidth vc)
+                  16 16 world 
+                  slices 
+                  (map fst tps) 
+                  surf
+                  (lightsPtr lights)
+                  (lightsNum lights) -- (fromIntegral (length lights))
+                  rl
 
 
 

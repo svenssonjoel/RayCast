@@ -1,8 +1,9 @@
 
 module Engine.RGB where 
 
+import Engine.Math
 
-data RGB = RGB Float Float Float 
+data RGB = RGB Vector3Df
 
-mkRGB = RGB 
+mkRGB r g b = RGB $ mkVector3Df r g b
 

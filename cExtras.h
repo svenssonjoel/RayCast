@@ -20,6 +20,23 @@ typedef struct {
   int32_t h; 
 } Dims2D; 
 
+typedef struct { 
+  float x1;
+  float y1; 
+  float x2;
+  float y2; 
+} RealLine; 
+
+
+typedef struct { 
+  int32_t viewDist;
+  int32_t viewHeight;
+  int32_t windowWidth;
+  int32_t windowHeight; 
+  int32_t wallWidth; 
+  int32_t wallHeight;
+} ViewConfig; 
+
 
 void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 		   int xt, int yt1, int yt2, SDL_Surface *text);
@@ -69,9 +86,10 @@ void lerpRow(int32_t wallWidth,
 	     float   p2x, float p2y);
 
 
-void lerpRows(int32_t wallWidth, 
-	      int32_t modMask,
-	      int32_t windowWidth, // things from ViewConfig that matters to this fun
+void lerpRows(//int32_t wallWidth, 
+	      //int32_t modMask,
+	      //int32_t windowWidth, // things from ViewConfig that matters to this fun
+              ViewConfig *vc,
 	     
 	      int32_t mapW, 
 	      int32_t mapH, 
@@ -82,9 +100,10 @@ void lerpRows(int32_t wallWidth,
 	      SDL_Surface *surf,
 	      light *lights, 
 	      int32_t num_lights,
-	     
-	      float   *p1xa, float *p1ya, 
-	      float   *p2xa, float *p2ya);
+	      
+              RealLine *rl);
+	      // float   *p1xa, float *p1ya, 
+	      //float   *p2xa, float *p2ya);
 
 void computeLight(float *r,
 		  float *g,

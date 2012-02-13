@@ -6,6 +6,7 @@ import Foreign.C.Types
 import Foreign.Storable
 
 import MathExtras
+
 ----------------------------------------------------------------------------
 -- Angles, Points, Vectors 
 type Angle = Float 
@@ -30,7 +31,7 @@ instance Storable Point2D where
   sizeOf _  = sizeOf (undefined :: Int32) * 2 
   alignment _ = 4
   peek p = do 
-    x <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt)
+    x <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt) 
     y <- fromIntegral `fmap` (peekByteOff p 4 :: IO CInt) 
     return $ Point2D x y 
   poke p (Point2D x y) = do 
@@ -76,23 +77,10 @@ instance Storable Dims2D where
     pokeByteOff p 0 (fromIntegral w :: CInt) 
     pokeByteOff p 4 (fromIntegral h :: CInt)
 
-  
-
-
---vecAdd (x1,y1) (x2,y2) = (x1+x2,y1+y2) 
---vecSub (x1,y1) (x2,y2) = (x1-x2,y1-y2)
 vecAdd = (+)
 vecSub = (-) 
 
 
-{-
-distance :: Point2D -> Point2D -> Float 
-distance (x1,y1) (x2,y2) = 
-  sqrt $ xd*xd+yd*yd 
-  where 
-    xd = fromIntegral $ x2 - x1 
-    yd = fromIntegral $ y2 - y1
-  -}   
 distance :: Point2D -> Point2D -> Float 
 distance p1 p2 = 
   sqrt $ xd*xd+yd*yd 
@@ -172,8 +160,8 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0
    (a2,b2,c2) = convertLine p2 d2 
    det = a1*b2 - a2*b1
    
-   x = (b2*c1 - b1*c2)  `div` det
-   y = (a1*c2 - a2*c1)  `div` det
+   x = (b2*c1 - b1*c2) `div` det
+   y = (a1*c2 - a2*c1) `div` det
 
 --convertRay :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
 convertRay  (Point2D x y) (Vector2D dx dy) = (a,b,c) 
@@ -212,3 +200,61 @@ intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )
     ratio   = if ratio' == 0.0 then 0.0001 else ratio'
     xsect   = fromIntegral d * ratio
 -} 
+
+
+----------------------------------------------------------------------------
+-- vectors of 2 floats 
+
+data Vector3Df = Vector3Df !Float !Float !Float 
+               deriving (Eq,Show)
+mkVector3Df = Vector3Df
+
+instance Num Vector3Df where 
+  (+) (Vector3Df x y z) (Vector3Df u v w) = Vector3Df (x+u) (y+v) (z+w) 
+  (-) (Vector3Df x y z) (Vector3Df u v w) = Vector3Df (x-u) (y-v) (z-w) 
+  (*) (Vector3Df x y z) (Vector3Df u v w) = Vector3Df (x*u) (y*v) (z*w) 
+  abs = undefined
+  signum = undefined 
+  fromInteger = undefined
+  
+instance Storable Vector3Df where
+  sizeOf _  = sizeOf (undefined :: Float) * 3 
+  alignment _ = 4 -- ?? 
+  peek p = do 
+    x <- realToFrac `fmap` (peekByteOff p 0 :: IO CFloat) 
+    y <- realToFrac `fmap` (peekByteOff p s :: IO CFloat) 
+    z <- realToFrac `fmap` (peekByteOff p (s+s) :: IO CFloat)
+    return $ mkVector3Df x y z 
+    where s = sizeOf (undefined :: CFloat) 
+  poke p (Vector3Df x y z) = do 
+    pokeByteOff p 0 (realToFrac x :: CFloat) 
+    pokeByteOff p s (realToFrac y :: CFloat)
+    pokeByteOff p (s+s) (realToFrac z :: CFloat)
+    where s = sizeOf (undefined :: CFloat)
+    
+    
+----------------------------------------------------------------------------
+-- line where endpoints are real-valued 
+
+data RealLine = RealLine (Float,Float) (Float,Float) 
+   deriving (Eq,Show) 
+            
+mkRealLine = RealLine 
+
+instance Storable RealLine where 
+  sizeOf _ = sizeOf (undefined :: Float) * 4
+  alignment _ = 4 -- ?  
+  peek p = do 
+    x1 <- realToFrac `fmap` (peekByteOff p 0 :: IO CFloat) 
+    y1 <- realToFrac `fmap` (peekByteOff p s :: IO CFloat)
+    x2 <- realToFrac `fmap` (peekByteOff p (s+s) :: IO CFloat)
+    y2 <- realToFrac `fmap` (peekByteOff p (s+s+s) :: IO CFloat)
+    return $ mkRealLine (x1,y1) (x2,y2) 
+    where s = sizeOf (undefined :: CFloat)
+  poke p (RealLine (x1,y1) (x2,y2)) = do 
+    pokeByteOff p 0 (realToFrac x1 :: CFloat) 
+    pokeByteOff p s (realToFrac y1 :: CFloat)
+    pokeByteOff p (s+s) (realToFrac x2 :: CFloat)
+    pokeByteOff p (s+s+s) (realToFrac y2 :: CFloat)    
+    where s = sizeOf (undefined :: CFloat)
+    
