@@ -387,6 +387,8 @@ void lerpRows(//int32_t wallWidth,
   int32_t wallWidth = vc->wallWidth;
   int32_t modMask   = wallWidth - 1;
   int32_t windowWidth = vc->windowWidth;
+  int32_t windowHeight = vc->windowHeight;
+  float   onedivww    = 1 / (float)windowWidth;
 
   int32_t *sp = (int32_t*)surf->pixels;
   int yi; //  = 300; 
@@ -395,21 +397,21 @@ void lerpRows(//int32_t wallWidth,
     
     // precalc some 
     int yww = y*windowWidth; 
-    int yww_ = (599-y)*windowWidth;
+    int yww_ = (windowHeight-1-y)*windowWidth;
 
     // the line being interpolated
-    float p1x =  rl[yi].x1;//p1xa[yi];
-    float p1y =  rl[yi].y1;//p1ya[yi];
-    float p2x =  rl[yi].x2;//p2xa[yi]; 
-    float p2y =  rl[yi].y2;//p2ya[yi];
+    float p1x =  rl[yi].x1;
+    float p1y =  rl[yi].y1;
+    float p2x =  rl[yi].x2;
+    float p2y =  rl[yi].y2;
 
     float inR = 0.0;
     float inG = 0.0;
     float inB = 0.0; 
     
-    // hardcoded 1/800
-    float rx = (float)(p2x - p1x) * 1.25e-3; // / (float)windowWidth;
-    float ry = (float)(p2y - p1y) * 1.25e-3; // / (float)windowWidth; 
+    // rates of change
+    float rx = (float)(p2x - p1x) * onedivww; // / (float)windowWidth;
+    float ry = (float)(p2y - p1y) * onedivww; // / (float)windowWidth; 
     int xi;
   
     for (xi = 0; xi < windowWidth; ++xi) { 
