@@ -11,13 +11,13 @@ import MathExtras
 -- Angles, Points, Vectors 
 type Angle = Float 
 
-data Point2D = Point2D {point2DGetX :: !Int32, 
-                        point2DGetY :: !Int32}
+data Point2D = Point2D {point2DGetX :: !Float, 
+                        point2DGetY :: !Float}
               deriving (Eq,Show)
                        
 mkPoint (x,y) = Point2D x y                       
-data Vector2D = Vector2D {vector2DGetX :: !Int32, 
-                          vector2DGetY :: !Int32}
+data Vector2D = Vector2D {vector2DGetX :: !Float, 
+                          vector2DGetY :: !Float}
                deriving (Eq,Show)
                         
 mkVector (x,y) = Vector2D x y                         
@@ -28,15 +28,15 @@ data Dims2D = Dims2D {dims2DGetW :: !Int32,
 mkDims (w,h) = Dims2D w h
 
 instance Storable Point2D where
-  sizeOf _  = sizeOf (undefined :: Int32) * 2 
+  sizeOf _  = sizeOf (undefined :: Float) * 2 
   alignment _ = 4
   peek p = do 
-    x <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt) 
-    y <- fromIntegral `fmap` (peekByteOff p 4 :: IO CInt) 
+    x <- realToFrac `fmap` (peekByteOff p 0 :: IO CFloat) 
+    y <- realToFrac `fmap` (peekByteOff p 4 :: IO CFloat) 
     return $ Point2D x y 
   poke p (Point2D x y) = do 
-    pokeByteOff p 0 (fromIntegral x :: CInt) 
-    pokeByteOff p 4 (fromIntegral y :: CInt)
+    pokeByteOff p 0 (realToFrac x :: CFloat) 
+    pokeByteOff p 4 (realToFrac y :: CFloat)
 
 instance Num Point2D where 
   (+) (Point2D x1 y1) (Point2D x2 y2) = Point2D (x1+x2) (y1+y2) 
@@ -50,12 +50,12 @@ instance Storable Vector2D where
   sizeOf _  = sizeOf (undefined :: Int32) * 2 
   alignment _ = 4
   peek p = do 
-    x <- fromIntegral `fmap` (peekByteOff p 0 :: IO CInt)
-    y <- fromIntegral `fmap` (peekByteOff p 4 :: IO CInt) 
+    x <- realToFrac `fmap` (peekByteOff p 0 :: IO CFloat)
+    y <- realToFrac `fmap` (peekByteOff p 4 :: IO CFloat) 
     return $ Vector2D x y 
   poke p (Vector2D x y) = do 
-    pokeByteOff p 0 (fromIntegral x :: CInt) 
-    pokeByteOff p 4 (fromIntegral y :: CInt)
+    pokeByteOff p 0 (realToFrac x :: CFloat) 
+    pokeByteOff p 4 (realToFrac y :: CFloat)
 
 
 instance Num Vector2D where 
@@ -90,8 +90,8 @@ distance p1 p2 =
     x2 = point2DGetX p2;
     y2 = point2DGetY p2; 
     
-    xd = fromIntegral $ x2 - x1 
-    yd = fromIntegral $ y2 - y1
+    xd = x2 - x1 
+    yd = y2 - y1
 
 
 
@@ -111,14 +111,14 @@ instance Storable Ray where
     return $ Ray p d 
   poke ptr (Ray p d) = do 
     pokeByteOff ptr 0 p
-    pokeByteOff ptr (sizeOf (undefined :: Point2D))  d
+    pokeByteOff ptr (sizeOf (undefined :: Point2D)) d
 
 
 
 mkRay :: Point2D -> Angle -> Ray 
 mkRay p r = Ray p 
-                (mkVector (floori_ (-1024.0*sin r),
-                           floori_ ( 1024.0*cos r)))
+                (mkVector (-1024.0*sin r,
+                            1024.0*cos r))
 
 posRayDx  r = rayDx r > 0 
 posRayDy  r = rayDy r > 0 
@@ -160,17 +160,17 @@ intersect (Ray p1 d1) (Line p2 d2) = if det == 0
    (a2,b2,c2) = convertLine p2 d2 
    det = a1*b2 - a2*b1
    
-   x = (b2*c1 - b1*c2) `div` det
-   y = (a1*c2 - a2*c1) `div` det
+   x = (b2*c1 - b1*c2) / det
+   y = (a1*c2 - a2*c1) / det
 
---convertRay :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
+convertRay :: Point2D -> Vector2D -> (Float,Float,Float)
 convertRay  (Point2D x y) (Vector2D dx dy) = (a,b,c) 
   where 
     a = dy             -- (y+dy) - y  
     b = -dx            -- x - (x+dx)
     c = a*x+b*y
    
---convertLine :: (Int,Int) -> (Int,Int) -> (Int,Int,Int)
+convertLine :: Point2D -> Point2D -> (Float,Float,Float)
 convertLine (Point2D x1 y1) (Point2D x2 y2) = (a,b,c) 
   where 
     a = y2 - y1 

@@ -49,8 +49,8 @@ void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
 
 
    -------------------------------------------------------------------------- */
-void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
-		      int xt, int yt0, int yt1, SDL_Surface *text, 
+void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
+		      int32_t xt, int32_t yt0, int32_t yt1, SDL_Surface *text, 
 		      float intensityR, 
 		      float intensityG,
 		      float intensityB) {

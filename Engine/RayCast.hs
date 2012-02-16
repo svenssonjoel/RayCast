@@ -128,7 +128,8 @@ castRay2 :: --(MArray StorableArray Int32 m, Monad m)
             -> IO (Float,Int32,Int32,(Float,Float,Float))
 castRay2 vc world lights accDist ray = 
     do 
-      value <- world !! (px `div` wallWidth vc, py `div` wallWidth vc)
+      value <- world !! (px `div` wallWidth vc,
+                         py `div` wallWidth vc)
       if (value > 0) -- ray has struck solid wall
         then 
           do 
@@ -141,11 +142,11 @@ castRay2 vc world lights accDist ray =
         
   where 
     grid_x = if (posRayDx ray) 
-             then (rayX ray .&. gridMask vc) + wallWidth vc
-             else (rayX ray .&. gridMask vc) - 1
+             then (rayXi ray .&. gridMask vc) + wallWidth vc
+             else (rayXi ray .&. gridMask vc) - 1
     grid_y = if (posRayDy ray) 
-             then (rayY ray .&. gridMask vc) + wallWidth vc
-             else (rayY ray .&. gridMask vc) -1 
+             then (rayYi ray .&. gridMask vc) + wallWidth vc
+             else (rayYi ray .&. gridMask vc) -1 
                   
     
     -- Create two lines for intersection test
@@ -161,17 +162,25 @@ castRay2 vc world lights accDist ray =
     
     
     
-    (px,py) = (point2DGetX posIntersect, 
-               point2DGetY posIntersect)
+    (px,py) = (point2DGetXi posIntersect, 
+               point2DGetYi posIntersect)
     (posIntersect,dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(point2DGetY p .&. modMask vc)) -- `mod` wallWidth vc) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(point2DGetX p .&. modMask vc)) -- <`mod` wallWidth vc) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p,(point2DGetYi p .&. modMask vc)) -- `mod` wallWidth vc) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p,(point2DGetXi p .&. modMask vc)) -- <`mod` wallWidth vc) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 < d2 
-             then (p,d1,(point2DGetY p .&. modMask vc)) -- `mod` wallWidth vc) ) 
-             else (q,d2,(point2DGetX q .&. modMask vc)) -- `mod` wallWidth vc) ) 
-
+             then (p,d1,(point2DGetYi p .&. modMask vc)) -- `mod` wallWidth vc) ) 
+             else (q,d2,(point2DGetXi q .&. modMask vc)) -- `mod` wallWidth vc) ) 
+    point2DGetXi :: Point2D -> Int32
+    point2DGetXi = floor . point2DGetX
+    point2DGetYi :: Point2D -> Int32
+    point2DGetYi = floor . point2DGetY
+    rayXi :: Ray -> Int32
+    rayXi = floor . rayX
+    rayYi :: Ray -> Int32
+    rayYi = floor . rayY
+    
