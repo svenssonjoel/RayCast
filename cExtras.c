@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "cExtras.h"
 
-#define LINEAR_ATTENUATION 0.02 
+#define LINEAR_ATTENUATION 0.02
 #define DIST_NUDGE(x) (x+0.0001)
 
 /* -----------------------------------------------------------------------------
