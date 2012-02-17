@@ -14,7 +14,7 @@ import Engine.Math
 import Engine.RayCast
 import Engine.ZBuffer
 import Engine.Light
-import Engine.ScreenPoint
+import Engine.ScreenCoords
 
 import Data.Int
 import Data.Word

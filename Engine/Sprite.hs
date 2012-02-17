@@ -7,7 +7,8 @@ import Graphics.UI.SDL
 import Engine.RayCast 
 import Engine.Math
 import Engine.RItem
-import Engine.ScreenPoint
+import Engine.ScreenCoords
+
 
 import MathExtras
 import CExtras

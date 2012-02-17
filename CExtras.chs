@@ -25,7 +25,7 @@ import Graphics.UI.SDL hiding (with)
 import Engine.ZBuffer 
 import Engine.Map 
 import Engine.Math
-import Engine.ScreenPoint
+import Engine.ScreenCoords
 
 #include "cExtras.h" 
 
