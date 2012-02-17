@@ -25,6 +25,7 @@ import Graphics.UI.SDL hiding (with)
 import Engine.ZBuffer 
 import Engine.Map 
 import Engine.Math
+import Engine.ScreenPoint
 
 #include "cExtras.h" 
 
@@ -97,6 +98,8 @@ withPixels ps f =
 -- why do I needs all these "castPtr"s everywhere ?
 withPoint p f = with p $ \ptr -> f (castPtr ptr)
 withDims  p f = with p $ \ptr -> f (castPtr ptr)
+withScrPoint p f = with p $ \ptr -> f (castPtr ptr)
+withScrDims  p f = with p $ \ptr -> f (castPtr ptr)
 withViewConfig p f = with p $ \ptr -> f (castPtr ptr)
                           
 withMap (MapType w arr) f = 
@@ -146,8 +149,8 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
 --   withFloatArray* `[Float]' } -> `()' id #}
 
 {# fun unsafe renderRItem as renderRItemC_ 
- { withPoint* `Point2D' ,
-   withDims*  `Dims2D' ,
+ { withScrPoint* `ScreenPoint' ,
+   withScrDims*  `ScreenDims' ,
    convSurface* `Surface' , 
    convSurface* `Surface' ,
    realToFrac   `Float' ,

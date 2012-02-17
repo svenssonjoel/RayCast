@@ -11,14 +11,19 @@ typedef struct {
 
 
 typedef struct { 
+  int32_t x; 
+  int32_t y; 
+} Point2D_int; 
+
+typedef struct { 
   float x; 
   float y; 
-} Point2D_int; 
+} Point2D;
 
 typedef struct { 
   int32_t w; 
   int32_t h; 
-} Dims2D; 
+} Dims2D_int; 
 
 typedef struct { 
   float x1;
@@ -47,10 +52,10 @@ void texturedVLineLit(int32_t x, int32_t y1, int32_t y2, SDL_Surface *surf,
 		      float intensityG, 
 		      float intensityB);
 
-void renderRItem(Point2D_int *p, Dims2D *dim, SDL_Surface *surf, 
+void renderRItem(Point2D_int *p, Dims2D_int *dim, SDL_Surface *surf, 
                  SDL_Surface *text, 
 		 float depth, float *depths,
-		 Point2D_int *wp, 
+		 Point2D *wp, 
 		 light *lights, 
 		 int32_t num_lights);
 

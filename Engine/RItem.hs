@@ -14,6 +14,7 @@ import Engine.Math
 import Engine.RayCast
 import Engine.ZBuffer
 import Engine.Light
+import Engine.ScreenPoint
 
 import Data.Int
 import Data.Word
@@ -25,9 +26,9 @@ import CExtras
 import MathExtras
 
 -- An objected projected onto screen 
-data RItem = RItem { rItemPos      :: Point2D, -- position on screen
+data RItem = RItem { rItemPos      :: ScreenPoint, -- position on screen
                      rItemWorldPos :: Point2D,  
-                     rItemDims     :: Dims2D,
+                     rItemDims     :: ScreenDims,
                      rItemTexture  :: Surface, 
                      rItemDepth    :: Float}
                  
@@ -39,7 +40,7 @@ sortRItems = sortBy depth
 
                                    
 renderRItem :: Surface -> ZBuffer -> Lights -> RItem -> IO () 
-renderRItem surf dists lights ritem = 
+renderRItem surf dists lights ritem = do  
   renderRItemC_ pos dim surf (rItemTexture ritem) 
                              dist dists
                              wPos
