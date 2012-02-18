@@ -49,8 +49,8 @@ void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
 
 
    -------------------------------------------------------------------------- */
-void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
-		      int xt, int yt0, int yt1, SDL_Surface *text, 
+void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
+		      int32_t xt, int32_t yt0, int32_t yt1, SDL_Surface *text, 
 		      float intensityR, 
 		      float intensityG,
 		      float intensityB) {
@@ -90,18 +90,18 @@ void texturedVLineLit(int x, int y0, int y1, SDL_Surface *surf,
    Render a textured billboarded 2D sprite  (called RItem in the Haskell code) 
    -------------------------------------------------------------------------- */
 
-void renderRItem(Point2D_int *p, Dims2D *d, SDL_Surface *surf, // Target rect and surface 
+void renderRItem(Point2D_int *p, Dims2D_int *d, SDL_Surface *surf, // Target rect and surface 
                  SDL_Surface *text, 
                  float depth, float *depths,
-		 Point2D_int *wp,
+		 Point2D *wp, // not really integers
                  light *lights, 
 	         int32_t num_lights) { 
   int32_t x = p->x;
   int32_t y = p->y;
   int32_t w = d->w;
   int32_t h = d->h;
-  int32_t wx = wp->x;
-  int32_t wy = wp->y;
+  float wx = wp->x;
+  float wy = wp->y;
   int width   = surf->w;
   int height  = surf->h;
   int columns = text->w;

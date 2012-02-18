@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, 
              FlexibleContexts#-} 
-{- 
+{-  
   2012 Joel Svensson   
 
 
@@ -276,8 +276,8 @@ newFloorCastPoint vc world (pos,angle) x y =
     radians = angle - columnAngle
     columnAngle = atan (fromIntegral (x {-column-} - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
     
-    ps = (fromIntegral (point2DGetX pos) - distance * sin radians
-         ,fromIntegral (point2DGetY pos) + distance * cos radians)
+    ps = ((point2DGetX pos) - distance * sin radians
+         ,(point2DGetY pos) + distance * cos radians)
     
     distance = rowDistance y 
     
@@ -495,7 +495,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,p
   
   let (x,y) = (point2DGetX pos, point2DGetY pos)
       lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
-                [mkLight ((i+5)*256+128,(j+1)*256+128+ly) (1.0,0.0,0.0) 
+                [mkLight ((i+5)*256+128,(j+1)*256+128+(fromIntegral ly)) (1.0,0.0,0.0) 
                 | i <- [0,9], j <- [0]])
                
   withLights lights $ \lights' ->              
@@ -558,31 +558,31 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,p
   -- very crude colision against walls added
   where 
     a = 3
-    moveLeft :: Monad m => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveLeft :: Monad m => Bool -> (Float,Float,Float) -> m (Float,Float,Float)
     moveLeft  b (r,x,y) = return $ if b then (r+0.08,x,y) else (r,x,y) 
-    moveRight :: Monad m => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveRight :: Monad m => Bool -> (Float,Float,Float) -> m (Float,Float,Float)
     moveRight b (r,x,y) = return $ if b then (r-0.08,x,y) else (r,x,y) 
     
-    moveUp :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+    moveUp :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Float,Float) -> m (Float,Float,Float)
     moveUp    b (r,x,y) = 
       do 
         ma <- movementAllowed (x',y')
         return $ if b && ma then (r,x',y')   else (r,x,y) 
       where 
-        x' = x - (floori_ ((fromIntegral walkSpeed)*sin r))
-        y' = y + (floori_ ((fromIntegral walkSpeed)*cos r))
-    moveDown :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Int32,Int32) -> m (Float,Int32,Int32)
+        x' = x - ((fromIntegral walkSpeed)*sin r)
+        y' = y + ((fromIntegral walkSpeed)*cos r)
+    moveDown :: (MArray StorableArray Int32 m,Monad m) => Bool -> (Float,Float,Float) -> m (Float,Float,Float)
     moveDown  b (r,x,y) = 
       do 
         ma <- movementAllowed (x',y')
         return $ if b && ma  then (r,x',y')   else (r,x,y) 
       where 
-        x' = x + (floori_ ((fromIntegral walkSpeed)*sin r))
-        y' = y - (floori_ ((fromIntegral walkSpeed)*cos r))
+        x' = x + ((fromIntegral walkSpeed)*sin r)
+        y' = y - ((fromIntegral walkSpeed)*cos r)
         
-    movementAllowed ::(MArray StorableArray Int32 m,  Monad m) => (Int32,Int32) -> m Bool    
+    movementAllowed ::(MArray StorableArray Int32 m,  Monad m) => (Float,Float) -> m Bool    
     movementAllowed (px,py) = 
       do 
-        value <- testLevelArr !! (px `div` wallWidth vc,py `div` wallWidth vc)
+        value <- testLevelArr !! ((floor px) `div` wallWidth vc,(floor py) `div` wallWidth vc)
         return$ value == 0
      

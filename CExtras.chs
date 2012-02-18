@@ -25,13 +25,14 @@ import Graphics.UI.SDL hiding (with)
 import Engine.ZBuffer 
 import Engine.Map 
 import Engine.Math
+import Engine.ScreenCoords
 
 #include "cExtras.h" 
 
 ---------------------------------------------------------------------------- 
 type Pixels = Ptr Int32
 
-data Light = Light !Int32 !Int32 
+data Light = Light !Float !Float
                    !Float !Float !Float 
 
 instance Storable Light where 
@@ -40,16 +41,16 @@ instance Storable Light where
   alignment a = 4 -- ? 
   peek p = 
     do  
-      px <- fromIntegral `fmap` ({#get light->lx #} p) 
-      py <- fromIntegral `fmap` ({#get light->ly #} p) 
+      px <- realToFrac `fmap` ({#get light->lx #} p) 
+      py <- realToFrac `fmap` ({#get light->ly #} p) 
       r <- realToFrac `fmap` ({#get light->inR #} p) 
       g <- realToFrac `fmap` ({#get light->inG #} p) 
       b <- realToFrac `fmap` ({#get light->inB #} p) 
       return$ Light px py r g b 
 
   poke p (Light px py r g b) = do 
-    {#set light.lx #} p (fromIntegral $ px) 
-    {#set light.ly #} p (fromIntegral $ py) 
+    {#set light.lx #} p (realToFrac $ px) 
+    {#set light.ly #} p (realToFrac $ py) 
     {#set light.inR #} p (realToFrac $ r) 
     {#set light.inG #} p (realToFrac $ g) 
     {#set light.inB #} p (realToFrac $ b) 
@@ -97,6 +98,8 @@ withPixels ps f =
 -- why do I needs all these "castPtr"s everywhere ?
 withPoint p f = with p $ \ptr -> f (castPtr ptr)
 withDims  p f = with p $ \ptr -> f (castPtr ptr)
+withScrPoint p f = with p $ \ptr -> f (castPtr ptr)
+withScrDims  p f = with p $ \ptr -> f (castPtr ptr)
 withViewConfig p f = with p $ \ptr -> f (castPtr ptr)
                           
 withMap (MapType w arr) f = 
@@ -146,8 +149,8 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
 --   withFloatArray* `[Float]' } -> `()' id #}
 
 {# fun unsafe renderRItem as renderRItemC_ 
- { withPoint* `Point2D' ,
-   withDims*  `Dims2D' ,
+ { withScrPoint* `ScreenPoint' ,
+   withScrDims*  `ScreenDims' ,
    convSurface* `Surface' , 
    convSurface* `Surface' ,
    realToFrac   `Float' ,
