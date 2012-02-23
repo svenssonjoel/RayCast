@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables, 
              FlexibleContexts
             #-}
+{- 2012 Joel Svensson -}
+
 module Engine.RayCast where 
 
 
@@ -11,6 +13,10 @@ import Engine.Math
 import Engine.Map
 import Engine.Light 
 import Engine.RGB
+import Engine.Slice 
+import Engine.ViewConfig
+import Engine.World
+
 
 import MathExtras 
 
@@ -25,60 +31,19 @@ import Data.Array.Storable
 import CExtras
 
 ----------------------------------------------------------------------------
--- ViewConfiguration
+-- raycasting  in "Cube"-World
 
--- MOVED INTO CExtras.chs 
---data ViewConfig = 
---  ViewConfig { vcViewDistance :: Int32,
---               vcViewHeight   :: Int32, -- dims ? (use Dims type?)
---               vcWindowWidth  :: Int32, 
---               vcWindowHeight :: Int32, 
---               vcWallDims     :: (Int32,Int32) } -- dims ? 
-  
-mkViewConfig = ViewConfig 
-
-viewportCenterX = (`div` 2) . vcWindowWidth 
-viewportCenterY = (`div` 2) . vcWindowHeight
-                  
-wallWidth  = fst . vcWallDims 
-wallHeight = snd . vcWallDims 
-
-gridMask = negate . modMask  
-modMask  vc = wallWidth vc - 1  
+instance World MapType where 
+  castRay = castRay' 
 
 
-
-----------------------------------------------------------------------------
--- Slices 
-
-data Slice = Slice {sliceTop :: Int32,
-                    sliceBot :: Int32, 
-                    sliceTex :: Int32,
-                    sliceTexCol :: Int32,
-                    sliceIntensityR :: Float,  --Group these up 
-                    sliceIntensityG :: Float, 
-                    sliceIntensityB :: Float,
-                    sliceDistance :: Float}
-
----------------------------------------------------------------------------- 
--- View 
-
-type View = (Point2D, Angle) 
-
-
-
-----------------------------------------------------------------------------
--- raycasting  
-
-castRay :: -- (MArray StorableArray Int32 m, Monad m)
-          -- => 
-           ViewConfig 
+castRay' :: ViewConfig 
            -> MapType 
            -> Lights
            -> View 
            -> Int32 
            -> IO Slice 
-castRay vc world lights (pos,angle) column = 
+castRay' vc world lights (pos,angle) column = 
   do 
   
   let ray  = mkRay pos (angle - columnAngle)

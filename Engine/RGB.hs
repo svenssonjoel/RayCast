@@ -1,4 +1,4 @@
-
+{- 2012 Joel Svensson -} 
 module Engine.RGB where 
 
 import Engine.Math

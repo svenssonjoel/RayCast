@@ -38,6 +38,9 @@ import Engine.RItem
 import Engine.Sprite 
 import Engine.ZBuffer
 import Engine.Light 
+import Engine.ViewConfig
+import Engine.Slice
+import Engine.World
 
 import Control.Monad
 import Data.Array

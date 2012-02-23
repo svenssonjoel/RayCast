@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+{- 2012 Joel Svensson -} 
 module Engine.Map where 
 
 -- import Data.Array

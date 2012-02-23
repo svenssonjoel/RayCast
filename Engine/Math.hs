@@ -1,3 +1,5 @@
+{- 2012 Joel Svensson -} 
+
 module Engine.Math where 
 
 import Data.Int
@@ -8,7 +10,11 @@ import Foreign.Storable
 import MathExtras
 
 ----------------------------------------------------------------------------
--- Angles, Points, Vectors 
+-- Angles, Points, Vectors, View
+
+
+type View = (Point2D, Angle) 
+
 type Angle = Float 
 
 data Point2D = Point2D {point2DGetX :: !Float, 

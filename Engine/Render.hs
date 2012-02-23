@@ -15,6 +15,8 @@ import Engine.RayCast
 import Engine.Math
 import Engine.Map 
 import Engine.Light
+import Engine.Slice
+import Engine.World
 
 import SDLUtils 
 import CExtras
@@ -30,11 +32,9 @@ import Foreign.Ptr
 -- rendering routines 
     
 -- renderWalls, to replace renderView
-renderWalls :: ViewConfig 
-               -> MapType {- Array2D Int32 Int32-}  
+renderWalls :: World w => ViewConfig 
+               -> w
                -> Lights
-               -- -> Ptr Light  -- [Light] 
-               -- -> Int
                -> View 
                -> [Surface] 
                -> Surface 
