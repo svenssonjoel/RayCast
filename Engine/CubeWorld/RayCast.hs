@@ -3,19 +3,20 @@
             #-}
 {- 2012 Joel Svensson -}
 
-module Engine.RayCast where 
+module Engine.CubeWorld.RayCast where 
 
 
 import Data.Int
 import Data.Bits 
 
 import Engine.Math
-import Engine.Map
 import Engine.Light 
 import Engine.RGB
 import Engine.Slice 
 import Engine.ViewConfig
 import Engine.World
+
+import Engine.CubeWorld.Map
 
 
 import MathExtras 

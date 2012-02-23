@@ -30,9 +30,8 @@ import qualified Prelude as P
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Types
 
-import Engine.RayCast
+
 import Engine.Math
-import Engine.Map
 import Engine.Render
 import Engine.RItem
 import Engine.Sprite 
@@ -41,6 +40,11 @@ import Engine.Light
 import Engine.ViewConfig
 import Engine.Slice
 import Engine.World
+
+import Engine.CubeWorld.Map
+import Engine.CubeWorld.RayCast
+-- Remove!
+import qualified Engine.PortalWorld.Map as Test
 
 import Control.Monad
 import Data.Array

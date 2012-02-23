@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 {- 2012 Joel Svensson -} 
-module Engine.Map where 
+
+module Engine.CubeWorld.Map where 
 
 -- import Data.Array
 import Data.Int 

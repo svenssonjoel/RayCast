@@ -11,7 +11,6 @@ module Engine.RItem where
 import Graphics.UI.SDL
 
 import Engine.Math
-import Engine.RayCast
 import Engine.ZBuffer
 import Engine.Light
 import Engine.ScreenCoords

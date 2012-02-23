@@ -23,10 +23,12 @@ import Graphics.UI.SDL hiding (with)
 
 -- Divide cExtras into smaller modules ?
 import Engine.ZBuffer 
-import Engine.Map 
+-- import Engine.Map 
 import Engine.Math
 import Engine.ScreenCoords
 
+
+import Engine.CubeWorld.Map 
 #include "cExtras.h" 
 
 ---------------------------------------------------------------------------- 

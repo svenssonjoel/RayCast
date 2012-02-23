@@ -11,9 +11,7 @@ import Graphics.UI.SDL
 import Data.Int
 import Control.Monad
 
-import Engine.RayCast
 import Engine.Math
-import Engine.Map 
 import Engine.Light
 import Engine.Slice
 import Engine.World

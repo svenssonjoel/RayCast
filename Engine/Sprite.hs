@@ -4,7 +4,6 @@ module Engine.Sprite where
 
 import Graphics.UI.SDL
 
-import Engine.RayCast 
 import Engine.Math
 import Engine.RItem
 import Engine.ScreenCoords
