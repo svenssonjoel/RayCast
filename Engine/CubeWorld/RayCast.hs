@@ -63,7 +63,7 @@ castRay' vc world lights (pos,angle) column =
                  bot 
                  texValue 
                  texCol 
-                 inR inG inB 
+                 (mkRGB inR inG inB)
                  dist 
   where 
     

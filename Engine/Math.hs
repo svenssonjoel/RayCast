@@ -85,7 +85,7 @@ instance Storable Dims2D where
 
 vecAdd = (+)
 vecSub = (-) 
-
+vecDot (Vector2D x1 y1) (Vector2D x2 y2) = x1*x2 + y1*y2
 
 distance :: Point2D -> Point2D -> Float 
 distance p1 p2 = 
@@ -100,6 +100,9 @@ distance p1 p2 =
     yd = y2 - y1
 
 
+-- assumes that p is on the line!
+distanceAlongLine p (Line s _) 
+  = distance p s               
 
 ----------------------------------------------------------------------------
 -- Rays 
@@ -157,6 +160,24 @@ mkLine = Line
 ----------------------------------------------------------------------------
 -- 
 
+-- intersect ray against a line segment.
+intersectSeg :: Ray -> Line -> Maybe Point2D 
+intersectSeg ray line = onSeg line $intersect ray line
+  where     
+    onSeg line mp = 
+      case mp of 
+        Nothing -> Nothing 
+        (Just p) -> if pointOnSeg p line
+                    then mp 
+                    else Nothing     
+                         
+pointOnSeg (Point2D px py) 
+           (Line (Point2D x1 y1) (Point2D x2 y2)) = 
+  (px >= min x1 x2 && px <= max x1 x2 && 
+   py >= min y1 y2 && py <= max y1 y2) 
+      
+
+-- intersect ray against "infinite" line.
 intersect :: Ray -> Line -> Maybe Point2D 
 intersect (Ray p1 d1) (Line p2 d2) = if det == 0 
                                      then Nothing 

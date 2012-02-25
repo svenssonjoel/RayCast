@@ -51,10 +51,7 @@ void texturedVLine(int x, int y0, int y1, SDL_Surface *surf,
    -------------------------------------------------------------------------- */
 void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
 		      int32_t xt, int32_t yt0, int32_t yt1, SDL_Surface *text, 
-		      float intensityR, 
-		      float intensityG,
-		      float intensityB) {
-
+		      RGB *rgb){
   int y; 
   int sh = surf->h; 
   int sw = surf->w;
@@ -78,9 +75,9 @@ void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
     unsigned char *p_ = (unsigned char*)&p;
     unsigned char *t_ = (unsigned char*)&t; 
 
-    p_[0] = intensityB * t_[0];
-    p_[1] = intensityG * t_[1]; 
-    p_[2] = intensityR * t_[2];
+    p_[0] = rgb->b * t_[0];
+    p_[1] = rgb->g * t_[1]; 
+    p_[2] = rgb->r * t_[2];
 
     sp[y*sw+x] = p; 
   } 

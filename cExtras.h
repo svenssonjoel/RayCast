@@ -32,6 +32,11 @@ typedef struct {
   float y2; 
 } RealLine; 
 
+typedef struct { 
+  float r; 
+  float g; 
+  float b; 
+} RGB;
 
 typedef struct { 
   int32_t viewDist;
@@ -47,10 +52,10 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 		   int xt, int yt1, int yt2, SDL_Surface *text);
 
 void texturedVLineLit(int32_t x, int32_t y1, int32_t y2, SDL_Surface *surf,
-		      int xt, int yt1, int yt2, SDL_Surface *text, 
-		      float intensityR,
-		      float intensityG, 
-		      float intensityB);
+		      int xt, int yt1, int yt2, SDL_Surface *text, RGB *rgb);  
+//		      float intensityR,
+//		      float intensityG, 
+//		      float intensityB);
 
 void renderRItem(Point2D_int *p, Dims2D_int *dim, SDL_Surface *surf, 
                  SDL_Surface *text, 

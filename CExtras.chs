@@ -26,6 +26,7 @@ import Engine.ZBuffer
 -- import Engine.Map 
 import Engine.Math
 import Engine.ScreenCoords
+import Engine.RGB
 
 
 import Engine.CubeWorld.Map 
@@ -103,6 +104,7 @@ withDims  p f = with p $ \ptr -> f (castPtr ptr)
 withScrPoint p f = with p $ \ptr -> f (castPtr ptr)
 withScrDims  p f = with p $ \ptr -> f (castPtr ptr)
 withViewConfig p f = with p $ \ptr -> f (castPtr ptr)
+withRGB p f = with p $ \ptr -> f (castPtr ptr)
                           
 withMap (MapType w arr) f = 
   withStorableArray arr $ \ptr -> f (castPtr ptr)
@@ -136,9 +138,10 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
     fromIntegral `Int',
     fromIntegral `Int',
     convSurface* `Surface',
-    realToFrac   `Float',
-    realToFrac   `Float', 
-    realToFrac   `Float'  } -> `()' id  #}
+    withRGB*     `RGB'  } -> `()' id #}
+--    realToFrac   `Float',
+--    realToFrac   `Float', 
+--    realToFrac   `Float'  } -> `()' id  #}
 
 --{# fun unsafe renderRItem as renderRItemC 
 -- { fromIntegral `Int' ,

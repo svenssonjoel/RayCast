@@ -55,9 +55,10 @@ drawSlice textures surf col slice =
               0 
               (textureHeight) 
               texture
-              (sliceIntensityR slice) 
-              (sliceIntensityG slice)
-              (sliceIntensityB slice) 
+              (sliceIntensity slice)
+--              (sliceIntensityR slice) 
+--              (sliceIntensityG slice)
+--              (sliceIntensityB slice) 
   where 
     texture = textures  P.!! (fromIntegral (sliceTex slice - 1))
     textureHeight = surfaceGetHeight texture
