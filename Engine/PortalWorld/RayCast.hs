@@ -18,7 +18,7 @@ import MathExtras
 
 ----------------------------------------------------------------------------
 --
-maxVisible = 2048
+maxVisible = 4096
 lightRadius = 256 -- remove
 textureWidth = 256
 
@@ -45,9 +45,9 @@ instance World MapType where
  
 -- intersect against a wall or portal
 wallIntersect :: Ray -> Wall -> Maybe Point2D    
-wallIntersect ray (Wall line id)  = intersect ray line   
+wallIntersect ray (Wall line id)  = intersectSeg ray line   
 wallIntersect ray (Portal line v _) = if (vecDot (rayDeltas ray) v <= 0.0) 
-                                      then intersect ray line
+                                      then intersectSeg ray line
                                       else Nothing   
   
 -- Helper for castRay  

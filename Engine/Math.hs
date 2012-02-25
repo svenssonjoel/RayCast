@@ -86,6 +86,7 @@ instance Storable Dims2D where
 vecAdd = (+)
 vecSub = (-) 
 vecDot (Vector2D x1 y1) (Vector2D x2 y2) = x1*x2 + y1*y2
+translate (Point2D x y) (Vector2D dx dy) = Point2D (x+dx) (y+dy)
 
 distance :: Point2D -> Point2D -> Float 
 distance p1 p2 = 
@@ -167,7 +168,8 @@ intersectSeg ray line = onSeg line $intersect ray line
     onSeg line mp = 
       case mp of 
         Nothing -> Nothing 
-        (Just p) -> if pointOnSeg p line
+        (Just p) -> if pointOnSeg p line &&  -- point is on the line 
+                       pointOnSeg p (mkLine (rayStart ray) (rayStart ray `translate` rayDeltas ray))
                     then mp 
                     else Nothing     
                          
