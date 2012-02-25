@@ -43,9 +43,6 @@ import Engine.World
 
 import Engine.CubeWorld.Map
 import Engine.CubeWorld.RayCast
--- Remove!
-import qualified Engine.PortalWorld.Map as Test
-import qualified Engine.PortalWorld.RayCast as Test1
 
 import Control.Monad
 import Data.Array
