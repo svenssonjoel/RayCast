@@ -12,9 +12,9 @@
   + Point lightsources (per pixel lighting on floors, per column lighting on walls) 
   
 * Examples 
-  * Examples/Wolf3DStyle: Retro wolfenstein3d style dungeons where everything 
+  + Examples/Wolf3DStyle: Retro wolfenstein3d style dungeons where everything 
     is made of "cubes"
-  * Examples/Portals: Walls can be at any angle towards eachother. 
+  + Examples/Portals: Walls can be at any angle towards eachother. 
     There are "Portals" to make the number of walls needed to intersect 
     against smaller. 
 
