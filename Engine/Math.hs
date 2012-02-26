@@ -87,6 +87,10 @@ vecAdd = (+)
 vecSub = (-) 
 vecDot (Vector2D x1 y1) (Vector2D x2 y2) = x1*x2 + y1*y2
 translate (Point2D x y) (Vector2D dx dy) = Point2D (x+dx) (y+dy)
+normalize (Vector2D x1 y1) = Vector2D (x1/m) (y1/m)
+  
+  where 
+    m = distance (mkPoint (0,0)) (mkPoint (x1,y1))
 
 distance :: Point2D -> Point2D -> Float 
 distance p1 p2 = 

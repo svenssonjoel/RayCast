@@ -468,15 +468,15 @@ main = do
 
   
   monster <- conv pf =<< loadBMP "../../Data/Eye1.bmp"  
-  let monsterSprite = [Sprite (mkPoint ((x+5)*256+128,(y+1)*256+128))
+  let monsterSprite = Sprite (mkPoint (5*256+128,1*256+128))
                               0
                               (256,256) 
-                              monster | x <- [0..10], y <- [0..10]] 
+                              monster
                    
   
                  
   eventLoop vc screen floorTextures wallTextures -- testTexture floorTex
-    monsterSprite
+    monsterSprite (mkPoint (4096,4096))
     (False,False,False,False) -- Keyboard state
     (0.0,mkPoint (256+128 ,256+128))
     0
@@ -491,12 +491,13 @@ eventLoop :: ViewConfig
              -> Surface 
              -> [Surface] 
              -> [Surface] 
-             -> [Sprite]
+             -> Sprite -- [Sprite]
+             -> Point2D
              -> (Bool,Bool,Bool,Bool) 
              -> (Float,Point2D) 
              -> Int32
              -> IO ()
-eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,pos) ly = do 
+eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right) (r,pos) ly = do 
   
   let (x,y) = (point2DGetX pos, point2DGetY pos)
       lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
@@ -517,18 +518,40 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,p
        newFloorCast3 vc testLevelFloorArr lights' bots (pos,r) floorTextures screen                                     
 
        
-       let monsterTfrmd = sortRItems $ 
-                          catMaybes $ 
-                          map (viewTransformSprite vc (pos,r)) monster    
+       let monsterTfrmd = viewTransformSprite vc (pos,r) monster
+             --sortRItems $ 
+             --catMaybes $ 
+             --map (viewTransformSprite vc (pos,r)) monster    
        
-       withZBuffer dists $ \zbuf -> 
-         sequence_ $ map (renderRItem screen zbuf lights') monsterTfrmd
+       withZBuffer dists $ \zbuf -> maybe (return ()) (renderRItem screen zbuf lights') monsterTfrmd
+--         case monsterTfrmd of 
+ --          Nothing -> return () 
+  --         (Just m) -> renderRItem screen zbuf lights' m
+         --sequence_ $ map (renderRItem screen zbuf lights') monsterTfrmd
                     
                              
        
        
     
   SDL.flip screen
+  
+  -- process monster (needs a monster data type and monster "scripts"!) 
+  
+  let targ' = if (spritePos monster `distance` targ < 32) 
+              then 
+                if (targ == mkPoint (4096,4096)) 
+                then mkPoint (0,0)
+                else mkPoint (4096,4096)
+              else targ
+      (Point2D sx sy) = targ' - spritePos monster
+      (Vector2D nx ny) = normalize (Vector2D sx sy)
+      newPos = spritePos monster `translate` (Vector2D (nx*16) (ny*16)) 
+      monster' = Sprite newPos (spriteElevation monster) (spriteDims monster) (spriteTexture monster)
+      
+  --putStrLn$ "position is: " ++ show (newPos)
+  --putStrLn$ "target is: " ++ show targ
+  
+  
   
   -- process events 
   e <- pollEvent
@@ -557,7 +580,7 @@ eventLoop vc screen floorTextures wallTextures monster (up,down,left,right) (r,p
   (r',x',y') <- (moveLeft left' >=> moveRight right' >=> moveUp up' >=> moveDown down') (r,x,y) 
   
   let pos' = mkPoint (x',y')
-  unless b $ eventLoop vc screen floorTextures wallTextures monster (up',down',left',right') (r',pos') ((ly + 128) `mod` 4096)    
+  unless b $ eventLoop vc screen floorTextures wallTextures monster' targ' (up',down',left',right') (r',pos') ((ly + 128) `mod` 4096)    
   
   
   -- very crude colision against walls added
