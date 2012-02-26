@@ -130,6 +130,11 @@ mkRay p r = Ray p
                 (mkVector (-1024.0*sin r,
                             1024.0*cos r))
 
+mkRayLen :: Point2D -> Angle -> Float -> Ray 
+mkRayLen p r l = Ray p
+                     (mkVector (-l*sin r,
+                                 l*cos r))
+
 posRayDx  r = rayDx r > 0 
 posRayDy  r = rayDy r > 0 
 

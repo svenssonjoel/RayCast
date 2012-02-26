@@ -233,16 +233,16 @@ eventLoop vc = do
   p@(Point2D x y)  <- gsUpdateViewPos id 
   r     <- gsUpdateViewAngle id 
   monster <- gsGetSprite 
-  --fnt <- gsGetFont
+  fnt <- gsGetFont
   
   -- Clear screen
   S.lift $ fillRect screen 
                     (Just (Rect 0 0 (fromIntegral (vcWindowWidth vc)) (fromIntegral (vcWindowHeight vc)))) 
                     pix
   
-  let lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
-                [mkLight ((i+5)*256+128,(j+1)*256+128) (1.0,0.0,0.0) 
-                | i <- [0,9], j <- [0]])
+  let lights = [mkLight (x,y) (1.0,1.0,1.0),
+                mkLight (-256,-256) (1.0,0.0,0.0), 
+                mkLight ( 512, 512) (0.0,1.0,0.0)]
   
   -- draw all walls
   S.lift$  withLights lights $ \ lights' -> 
@@ -257,40 +257,6 @@ eventLoop vc = do
       withZBuffer dists $ \zbuf -> 
         maybe (return ()) (renderRItem screen zbuf lights' ) monsterTfrmd
  
-  --ticks2 <- getTicks 
-  --let (ticks',fps') = if ( ticks2 - ticks >= 1000)                            
-  --                    then (ticks2,fromIntegral frames / (fromIntegral ticks' / 1000))
-  --                   else (1,fps)     
-                           
-{-                            
- --  renderMsg fnt ("FPS: " ++ show fps') (0,0) screen                          
-  -- Causes segfault!  
-  txt <- renderTextSolid fnt ("FPS: " ++ show fps') (Color 255 255 255) 
-  txt1 <- renderTextSolid fnt ("pos: " ++ show (x,y)) (Color 255 255 255)  
-  txt2 <- renderTextSolid fnt ("mpos: " ++ show (monsterViewX,monsterViewY)) (Color 255 255 255)  
-  --txt3 <- renderTextSolid fnt ("mprojx: " ++ show projx) (Color 255 255 255)  
-  txt4 <- renderTextSolid fnt ("morig: " ++ show (mx,my)) (Color 255 255 255)  
-  txt5 <- renderTextSolid fnt ("mtrans: " ++ show (mx',my')) (Color 255 255 255)  
-  txt6 <- renderTextSolid fnt ("radians: " ++ show r) (Color 255 255 255)  
---  txt3 <- renderTextSolid fnt ("mprojx: " ++ show projx) (Color 255 255 255)  
-  
-  
-  blitSurface txt Nothing screen Nothing
-  blitSurface txt1 Nothing screen (Just (Rect 0 15 800 600))
-  blitSurface txt2 Nothing screen (Just (Rect 0 30 800 600))
-  --blitSurface txt3 Nothing screen (Just (Rect 0 45 800 600))
-  blitSurface txt4 Nothing screen (Just (Rect 0 60 800 600))
-  blitSurface txt5 Nothing screen (Just (Rect 0 75 800 600))
-  blitSurface txt6 Nothing screen (Just (Rect 0 100 800 600))
-  freeSurface txt
-  freeSurface txt1
-  freeSurface txt2
-  --freeSurface txt3
-  freeSurface txt4
-  freeSurface txt5
-  freeSurface txt6
- -}  
-
   S.lift$ SDL.flip screen
   
   -- process events 
@@ -302,6 +268,7 @@ eventLoop vc = do
   -- Handle the escape key
   let b = case e of 
             (KeyDown k) -> symKey k == SDLK_ESCAPE 
+            Quit        -> True
             otherwise -> False
    
   let (r',x',y') = (moveLeft left' . moveRight right' . moveUp up' . moveDown down') (r,x,y)         
@@ -325,8 +292,8 @@ eventLoop vc = do
   
   where 
     
-    moveLeft  b (r,x,y) = if b then (r+0.04,x,y) else (r,x,y) 
-    moveRight b (r,x,y) = if b then (r-0.04,x,y) else (r,x,y) 
+    moveLeft  b (r,x,y) = if b then (r+0.08,x,y) else (r,x,y) 
+    moveRight b (r,x,y) = if b then (r-0.08,x,y) else (r,x,y) 
     moveUp    b (r,x,y) = if b && movementAllowed (x',y') then (r,x',y')   else (r,x,y) 
       where 
         x' = x - (fromIntegral walkSpeed*sin r)

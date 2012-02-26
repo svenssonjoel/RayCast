@@ -15,7 +15,7 @@ import Data.List hiding (intersect)
 import Data.Int
 
 import MathExtras
-
+import CExtras
 ----------------------------------------------------------------------------
 --
 maxVisible = 4096
@@ -24,9 +24,13 @@ textureWidth = 256
 
 ---------------------------------------------------------------------------- 
 instance World MapType where 
-  castRay vc world lights (pos,angle) column = return$ Slice top bot texValue texCol rgb dist  
+  castRay vc world lights (pos,angle) column = 
+    do 
+      ((),inR,inG,inB) <- computeLight (floori_ px) (floori_ py) (lightsPtr lights) (lightsNum lights)
+      return$ Slice top bot texValue texCol (mkRGB inR inG inB) dist  
+      
     where 
-      ray = mkRay pos (angle - colAngle) 
+      ray = mkRayLen pos (angle - colAngle) maxVisible
       col = column - viewportCenterX vc
       colAngle = atan $ fromIntegral col / fromIntegral (vcViewDistance vc)
     
@@ -34,14 +38,9 @@ instance World MapType where
       bot  = floori_ $ fromIntegral (viewportCenterY vc) + (fromIntegral height / 2) 
       height = floori_ $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
     
-      -- compute light !!
-      rgb = mkRGB (min 1.0 (lightRadius/dist))
-                  (min 1.0 (lightRadius/dist))
-                  (min 1.0 (lightRadius/dist))
-               
       dist = dist' * cos colAngle
     
-      (dist', texValue, texCol) = castRay2 world ray 
+      (dist', texValue, texCol, (Point2D px py)) = castRay2 world ray 
  
 -- intersect against a wall or portal
 wallIntersect :: Ray -> Wall -> Maybe Point2D    
@@ -51,12 +50,12 @@ wallIntersect ray (Portal line v _) = if (vecDot (rayDeltas ray) v <= 0.0)
                                       else Nothing   
   
 -- Helper for castRay  
-castRay2 :: MapType ->  Ray  -> (Float,Int32,Int32)
+castRay2 :: MapType ->  Ray  -> (Float,Int32,Int32,Point2D)
 castRay2 world ray = 
          case wall of 
-            (Just (Wall _ _)) -> (d,1,offset) -- cheat a bit for now  
+            (Just (Wall _ _)) -> (d,1,offset,point) -- cheat a bit for now  
             (Just (Portal _ _ w')) -> {-trace "Portal" $-}  castRay2 w' ray 
-            Nothing -> (d,1,offset)
+            Nothing -> (d,1,offset,point)
   where 
     walls = mapWalls world              
     
@@ -68,6 +67,7 @@ castRay2 world ray =
     dist          = if null dist' 
                     then (maxVisible,(Point2D 0 0),Nothing) 
                     else  (head dist')
+    (_,point,_)         = dist
     
     -- TODO: Clean this mess up 
                                                                    
