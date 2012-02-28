@@ -20,10 +20,6 @@ import SDLUtils
 import CExtras
 import MathExtras
 
---remove
-import Foreign.Ptr
-
-
 
 
 ----------------------------------------------------------------------------
@@ -56,9 +52,6 @@ drawSlice textures surf col slice =
               (textureHeight) 
               texture
               (sliceIntensity slice)
---              (sliceIntensityR slice) 
---              (sliceIntensityG slice)
---              (sliceIntensityB slice) 
   where 
     texture = textures  P.!! (fromIntegral (sliceTex slice - 1))
     textureHeight = surfaceGetHeight texture
