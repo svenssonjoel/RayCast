@@ -114,16 +114,18 @@ castRay2 vc world lights accDist ray =
                   
     
     -- Create two lines for intersection test
-    x_line = Line (mkPoint (fromIntegral grid_x,-1024)) 
-                  (mkPoint (fromIntegral grid_x,1024)) 
-    y_line = Line (mkPoint (-1024,fromIntegral grid_y)) 
-                  (mkPoint (1024,fromIntegral grid_y))  
+    x_line = Line (mkPoint (fromIntegral grid_x,0)) 
+                  (mkPoint (fromIntegral grid_x,100)) 
+    y_line = Line (mkPoint (0,fromIntegral grid_y)) 
+                  (mkPoint (100,fromIntegral grid_y))  
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
-    x_intersect = intersect ray x_line 
-    y_intersect = intersect ray y_line
-    
+    x_intersect = intersectX ray x_line 
+    y_intersect = intersectY ray y_line
+    -- TODO: using intersect (the general one) 
+    --       of intersectX + intersectY both versions 
+    --       show glitches (problem is elsewhere ?)
     
     
     (px,py) = (point2DGetXi posIntersect, 

@@ -219,25 +219,24 @@ convertLine (Point2D x1 y1) (Point2D x2 y2) = (a,b,c)
 ----------------------------------------------------------------------------
 -- intersection tests that are more specific to the task at hand  
 
-{- 
-intersectX :: Ray -> Line -> Maybe Vector2D 
-intersectX (Ray r1 d1) (Line p1 p2) =  Just (fst p1,snd r1 + floori_ ysect  )	
-  where	
-    d       = fst p1 - fst r1
-    divisor = if fst d1 == 0 then 0.0001 else fromIntegral (fst d1)
-    ratio'  = fromIntegral (snd d1) / divisor 
-    ratio   = if ratio' == 0.0 then  0.0001 else ratio'
-    ysect   = fromIntegral d * ratio
 
-intersectY :: Ray -> Line -> Maybe Vector2D 
-intersectY (Ray r1 d1) (Line p1 p2) =  Just (fst r1 + floori_ xsect ,snd p1 )	
+intersectX :: Ray -> Line -> Maybe Point2D 
+intersectX (Ray r1 d1) (Line p1 p2) =  Just$ mkPoint (point2DGetX p1,point2DGetY r1 + ysect  )	
   where	
-    d       = snd p1 - snd r1
-    divisor = if snd d1 == 0 then 0.0001 else fromIntegral (snd d1)
-    ratio'  = fromIntegral (fst d1) / divisor 
+    d       = point2DGetX p1 - point2DGetX r1
+    divisor = if vector2DGetX d1 == 0.0 then 0.0001 else vector2DGetX d1
+    ratio'  = (vector2DGetY d1) / divisor 
+    ratio   = if ratio' == 0.0 then  0.0001 else ratio'
+    ysect   = d * ratio
+
+intersectY :: Ray -> Line -> Maybe Point2D 
+intersectY (Ray r1 d1) (Line p1 p2) =  Just$ mkPoint (point2DGetX r1 + xsect ,point2DGetY p1 )	
+  where	
+    d       = point2DGetY p1 - point2DGetY r1
+    divisor = if vector2DGetY d1 == 0.0 then 0.0001 else vector2DGetY d1
+    ratio'  = vector2DGetX d1 / divisor 
     ratio   = if ratio' == 0.0 then 0.0001 else ratio'
-    xsect   = fromIntegral d * ratio
--} 
+    xsect   = d * ratio 
 
 
 ----------------------------------------------------------------------------

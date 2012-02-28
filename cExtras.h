@@ -52,7 +52,7 @@ void texturedVLine(int x, int y1, int y2, SDL_Surface *surf,
 		   int xt, int yt1, int yt2, SDL_Surface *text);
 
 void texturedVLineLit(int32_t x, int32_t y1, int32_t y2, SDL_Surface *surf,
-		      int xt, int yt1, int yt2, SDL_Surface *text, RGB *rgb);  
+		      int32_t xt, int32_t yt1, int32_t yt2, SDL_Surface *text, RGB *rgb);  
 //		      float intensityR,
 //		      float intensityG, 
 //		      float intensityB);

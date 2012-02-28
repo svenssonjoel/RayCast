@@ -130,13 +130,13 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
     convSurface* `Surface' } -> `()' id  #}
 
 {# fun unsafe texturedVLineLit as texVLineLit 
-  { fromIntegral `Int' , 
-    fromIntegral `Int' , 
-    fromIntegral `Int' ,
+  { fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' ,
     convSurface* `Surface', 
-    fromIntegral `Int',
-    fromIntegral `Int',
-    fromIntegral `Int',
+    fromIntegral `Int32',
+    fromIntegral `Int32',
+    fromIntegral `Int32',
     convSurface* `Surface',
     withRGB*     `RGB'  } -> `()' id #}
 --    realToFrac   `Float',

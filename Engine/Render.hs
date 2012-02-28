@@ -43,13 +43,13 @@ renderWalls vc world lights (pos,angle) textures surf =
     
 drawSlice :: [Surface] -> Surface -> Int32 -> Slice -> IO () 
 drawSlice textures surf col slice = 
-  texVLineLit (fromIntegral col) 
-              (fromIntegral (sliceTop slice)) 
-              (fromIntegral (sliceBot slice)) 
+  texVLineLit col
+              (sliceTop slice)
+              (sliceBot slice)
               surf 
-              (fromIntegral (sliceTexCol slice))
+              (sliceTexCol slice)
               0 
-              (textureHeight) 
+              (fromIntegral (textureHeight)) 
               texture
               (sliceIntensity slice)
   where 
