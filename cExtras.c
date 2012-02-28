@@ -64,9 +64,9 @@ void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
 
   int32_t *sp =(int32_t*)surf->pixels;
   int32_t *tp =(int32_t*)text->pixels;  
-
-  float ratio = (float)texHeight / lineHeight;
   
+  float ratio = (float)texHeight / lineHeight;
+
   for(y = clipped_y1; y<clipped_y2; y++){
     
     float ty = (y - y0) * ratio;

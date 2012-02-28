@@ -1,3 +1,11 @@
 
 
-* Test
+* Portals  
+  + A map is a set of 2D lines or a portal into another map.  
+ 
+* Wolf3DStyle
+  + A map is a 2D array of integers. 
+* DungeonGame
+  + View directions limited (E,W,N,S) 
+  + movement: big steps. 
+  

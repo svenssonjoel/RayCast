@@ -67,8 +67,6 @@ castRay' vc world lights (pos,angle) column =
                  dist 
   where 
     
---    (dist', texValue, texCol,(inR,inG,inB)) = castRay2 vc world lights 0.0 ray 
-    
 lightContribution :: Point2D -> Light -> (Float,Float,Float)   
 lightContribution pos (Light lx ly inR' inG' inB' ) = (inR,inG,inB)    
   where
@@ -103,7 +101,7 @@ castRay2 vc world lights accDist ray =
             return (accDist+dist,value,offs,(inR,inG,inB)) 
         else 
           -- Continue along the ray 
-          castRay2 vc world lights (accDist+dist) (Ray posIntersect{-(px ,py)-} (rayDeltas ray))
+          castRay2 vc world lights (accDist+dist) (Ray posIntersect (rayDeltas ray))
 
         
   where 
@@ -116,10 +114,10 @@ castRay2 vc world lights accDist ray =
                   
     
     -- Create two lines for intersection test
-    x_line = Line (mkPoint (fromIntegral grid_x,0)) 
-                  (mkPoint (fromIntegral grid_x,1)) 
-    y_line = Line (mkPoint (0,fromIntegral grid_y)) 
-                  (mkPoint (1,fromIntegral grid_y))  
+    x_line = Line (mkPoint (fromIntegral grid_x,-1024)) 
+                  (mkPoint (fromIntegral grid_x,1024)) 
+    y_line = Line (mkPoint (-1024,fromIntegral grid_y)) 
+                  (mkPoint (1024,fromIntegral grid_y))  
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
@@ -146,7 +144,7 @@ castRay2 vc world lights accDist ray =
     point2DGetYi :: Point2D -> Int32
     point2DGetYi = floor . point2DGetY
     rayXi :: Ray -> Int32
-    rayXi = floor . rayX
+    rayXi = floori_ . rayX
     rayYi :: Ray -> Int32
-    rayYi = floor . rayY
+    rayYi = floori_ . rayY
     
