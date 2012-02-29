@@ -11,7 +11,4 @@ data Slice = Slice {sliceTop :: Int32,
                     sliceTex :: Int32,
                     sliceTexCol :: Int32,
                     sliceIntensity :: RGB, 
-                    --sliceIntensityR :: Float,  -- USE RGB !
-                    --sliceIntensityG :: Float, 
-                    --sliceIntensityB :: Float,
                     sliceDistance :: Float}

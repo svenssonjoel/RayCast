@@ -53,7 +53,7 @@ instance Num Point2D where
   fromInteger i = Point2D (fromInteger i) 0 
 
 instance Storable Vector2D where
-  sizeOf _  = sizeOf (undefined :: Int32) * 2 
+  sizeOf _  = sizeOf (undefined :: Float) * 2 
   alignment _ = 4
   peek p = do 
     x <- realToFrac `fmap` (peekByteOff p 0 :: IO CFloat)
@@ -96,10 +96,10 @@ distance :: Point2D -> Point2D -> Float
 distance p1 p2 = 
   sqrt $ xd*xd+yd*yd 
   where 
-    x1 = point2DGetX p1;
-    y1 = point2DGetY p1; 
-    x2 = point2DGetX p2;
-    y2 = point2DGetY p2; 
+    x1 = point2DGetX p1
+    y1 = point2DGetY p1
+    x2 = point2DGetX p2
+    y2 = point2DGetY p2 
     
     xd = x2 - x1 
     yd = y2 - y1
@@ -219,25 +219,26 @@ convertLine (Point2D x1 y1) (Point2D x2 y2) = (a,b,c)
 ----------------------------------------------------------------------------
 -- intersection tests that are more specific to the task at hand  
 
+{-
 
 intersectX :: Ray -> Line -> Maybe Point2D 
 intersectX (Ray r1 d1) (Line p1 p2) =  Just$ mkPoint (point2DGetX p1,point2DGetY r1 + ysect  )	
   where	
     d       = point2DGetX p1 - point2DGetX r1
-    divisor = if vector2DGetX d1 == 0.0 then 0.0001 else vector2DGetX d1
+    divisor = if (abs (vector2DGetX d1) < 0.1) then 0.1 else vector2DGetX d1
     ratio'  = (vector2DGetY d1) / divisor 
-    ratio   = if ratio' == 0.0 then  0.0001 else ratio'
+    ratio   = if ratio' < 0.1 then  0.1 else ratio'
     ysect   = d * ratio
 
 intersectY :: Ray -> Line -> Maybe Point2D 
 intersectY (Ray r1 d1) (Line p1 p2) =  Just$ mkPoint (point2DGetX r1 + xsect ,point2DGetY p1 )	
   where	
     d       = point2DGetY p1 - point2DGetY r1
-    divisor = if vector2DGetY d1 == 0.0 then 0.0001 else vector2DGetY d1
+    divisor = if (abs (vector2DGetY d1) < 0.1) then 0.1 else vector2DGetY d1
     ratio'  = vector2DGetX d1 / divisor 
-    ratio   = if ratio' == 0.0 then 0.0001 else ratio'
+    ratio   = if ratio' < 0.1 then 0.1 else ratio'
     xsect   = d * ratio 
-
+-} 
 
 ----------------------------------------------------------------------------
 -- vectors of 2 floats 

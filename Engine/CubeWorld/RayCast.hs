@@ -109,20 +109,20 @@ castRay2 vc world lights accDist ray =
              then (rayXi ray .&. gridMask vc) + wallWidth vc
              else (rayXi ray .&. gridMask vc) - 1
     grid_y = if (posRayDy ray) 
-             then (rayYi ray .&. gridMask vc) + wallWidth vc
-             else (rayYi ray .&. gridMask vc) -1 
+             then (rayYi ray .&. gridMask vc) + wallWidth vc 
+             else (rayYi ray .&. gridMask vc) - 1
                   
     
     -- Create two lines for intersection test
     x_line = Line (mkPoint (fromIntegral grid_x,0)) 
-                  (mkPoint (fromIntegral grid_x,100)) 
+                  (mkPoint (fromIntegral grid_x,1)) 
     y_line = Line (mkPoint (0,fromIntegral grid_y)) 
-                  (mkPoint (100,fromIntegral grid_y))  
+                  (mkPoint (1,fromIntegral grid_y))  
     
     -- intersect ray with both vertical and horizontal line
     -- the closest one is used. 
-    x_intersect = intersectX ray x_line 
-    y_intersect = intersectY ray y_line
+    x_intersect = intersect ray x_line 
+    y_intersect = intersect ray y_line
     -- TODO: using intersect (the general one) 
     --       of intersectX + intersectY both versions 
     --       show glitches (problem is elsewhere ?)
@@ -133,20 +133,22 @@ castRay2 vc world lights accDist ray =
     (posIntersect,dist,offs)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p,(point2DGetYi p .&. modMask vc)) -- `mod` wallWidth vc) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p,(point2DGetXi p .&. modMask vc)) -- <`mod` wallWidth vc) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p, floor (distanceAlongLine p x_line) `mod` 256) -- (point2DGetYi p `mod` 256)) --  modMask vc)) -- `mod` wallWidth vc) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p, floor (distanceAlongLine p y_line) `mod` 256) -- (point2DGetXi p `mod` 256)) --  modMask vc)) -- <`mod` wallWidth vc) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
-          in if d1 < d2 
-             then (p,d1,(point2DGetYi p .&. modMask vc)) -- `mod` wallWidth vc) ) 
-             else (q,d2,(point2DGetXi q .&. modMask vc)) -- `mod` wallWidth vc) ) 
+          in if d1 <= d2 
+             then (p,d1,floor (distanceAlongLine p x_line) `mod` 256) -- (point2DGetYi p `mod` 256)) -- .&. modMask vc)) -- `mod` wallWidth vc) ) 
+             else (q,d2,floor (distanceAlongLine p y_line) `mod` 256) -- (point2DGetXi q `mod` 256)) -- .&. modMask vc)) -- `mod` wallWidth vc) ) 
     point2DGetXi :: Point2D -> Int32
     point2DGetXi = floor . point2DGetX
     point2DGetYi :: Point2D -> Int32
     point2DGetYi = floor . point2DGetY
     rayXi :: Ray -> Int32
-    rayXi = floori_ . rayX
+    rayXi = floor . rayX
     rayYi :: Ray -> Int32
-    rayYi = floori_ . rayY
+    rayYi = floor . rayY
+   
     
+  

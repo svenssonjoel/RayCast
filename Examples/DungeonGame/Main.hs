@@ -327,7 +327,7 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
           then moveForward dir pos
           else return pos
   
-  putStrLn$ show dir'
+--   putStrLn$ show dir'
   -- let pos' = mkPoint (x',y')
       
   unless b $ eventLoop vc screen floorTextures wallTextures monster' targ' (up',down',left',right') (dir',pos') ((ly + 128) `mod` 4096)    
