@@ -80,6 +80,10 @@ lightContribution pos (Light lx ly inR' inG' inB' ) = (inR,inG,inB)
 vec3add (x,y,z) (u,v,w) = (x+u,y+v,z+w)
 clamp i (x,y,z) = (min x i, min y i, min z i) 
 
+
+data IntersectKind = X | Y
+                   deriving Show 
+                         
 ----------------------------------------------------------------------------
 -- castRay2
 castRay2 :: --(MArray StorableArray Int32 m, Monad m) 
@@ -92,16 +96,21 @@ castRay2 :: --(MArray StorableArray Int32 m, Monad m)
             -> IO (Float,Int32,Int32,(Float,Float,Float))
 castRay2 vc world lights accDist ray = 
     do 
+      
       value <- world !! (px `div` wallWidth vc,
                          py `div` wallWidth vc)
       if (value > 0) -- ray has struck solid wall
         then 
           do 
+            putStr$ "(" ++ show (posRayDx ray,posRayDy ray) ++ " " ++ show offs ++"," ++ show intersectKind++ ")" 
             ((),inR,inG,inB) <- computeLight px py (lightsPtr lights) (lightsNum lights)
             return (accDist+dist,value,offs,(inR,inG,inB)) 
         else 
           -- Continue along the ray 
-          castRay2 vc world lights (accDist+dist) (Ray posIntersect (rayDeltas ray))
+          -- TODO: Glitch changes in nature depending on using (px,py) 
+          --       or "posIntersect" as startingpoint for recursive ray. 
+          --       This may be where the glitch  originates. 
+          castRay2 vc world lights (accDist+dist) (Ray (mkPoint (fromIntegral px,fromIntegral py)){-posIntersect-} (rayDeltas ray))
 
         
   where 
@@ -109,7 +118,7 @@ castRay2 vc world lights accDist ray =
              then (rayXi ray .&. gridMask vc) + wallWidth vc
              else (rayXi ray .&. gridMask vc) - 1
     grid_y = if (posRayDy ray) 
-             then (rayYi ray .&. gridMask vc) + wallWidth vc 
+             then (rayYi ray .&. gridMask vc) + wallWidth vc
              else (rayYi ray .&. gridMask vc) - 1
                   
     
@@ -126,21 +135,23 @@ castRay2 vc world lights accDist ray =
     -- TODO: using intersect (the general one) 
     --       of intersectX + intersectY both versions 
     --       show glitches (problem is elsewhere ?)
+    -- TODO: does it have to do with Float precision ? 
+    -- TODO: The glitch is visible already in the version that used int math. (but in a different form) 
     
     
     (px,py) = (point2DGetXi posIntersect, 
                point2DGetYi posIntersect)
-    (posIntersect,dist,offs)  = 
+    (posIntersect,dist,offs,intersectKind)  = 
       case (x_intersect,y_intersect) of 
         (Nothing,Nothing) -> error "Totally impossible" 
-        (Just p, Nothing) -> (p, distance (rayStart ray) p, floor (distanceAlongLine p x_line) `mod` 256) -- (point2DGetYi p `mod` 256)) --  modMask vc)) -- `mod` wallWidth vc) )
-        (Nothing, Just p) -> (p, distance (rayStart ray) p, floor (distanceAlongLine p y_line) `mod` 256) -- (point2DGetXi p `mod` 256)) --  modMask vc)) -- <`mod` wallWidth vc) ) 
+        (Just p, Nothing) -> (p, distance (rayStart ray) p, (point2DGetYi p .&. modMask vc),X) -- `mod` wallWidth vc) )
+        (Nothing, Just p) -> (p, distance (rayStart ray) p, (point2DGetXi p .&. modMask vc),Y) -- <`mod` wallWidth vc) ) 
         (Just p, Just q)  -> 
           let d1 = distance (rayStart ray) p 
               d2 = distance (rayStart ray) q 
           in if d1 <= d2 
-             then (p,d1,floor (distanceAlongLine p x_line) `mod` 256) -- (point2DGetYi p `mod` 256)) -- .&. modMask vc)) -- `mod` wallWidth vc) ) 
-             else (q,d2,floor (distanceAlongLine p y_line) `mod` 256) -- (point2DGetXi q `mod` 256)) -- .&. modMask vc)) -- `mod` wallWidth vc) ) 
+             then (p,d1,(point2DGetYi p .&. modMask vc),X) -- `mod` wallWidth vc) ) 
+             else (q,d2,(point2DGetXi q .&. modMask vc),Y) -- `mod` wallWidth vc) ) 
     point2DGetXi :: Point2D -> Int32
     point2DGetXi = floor . point2DGetX
     point2DGetYi :: Point2D -> Int32

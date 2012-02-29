@@ -176,7 +176,7 @@ main = do
   SDL.init [InitEverything] 
   
     
-  let vc = mkViewConfig (floori_ (800.0*0.6)) -- viewDist  
+  let vc = mkViewConfig (floor (800.0*0.6)) -- viewDist  
                         128    -- viewHeight
                         800    -- windowWidth
                         600    -- windowHeight

@@ -78,6 +78,7 @@ void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
     p_[0] = rgb->b * t_[0];
     p_[1] = rgb->g * t_[1]; 
     p_[2] = rgb->r * t_[2];
+    p_[3] = 0; 
 
     sp[y*sw+x] = p; 
   } 

@@ -38,12 +38,13 @@ renderWalls vc world lights (pos,angle) textures surf =
     slices' <- mapM (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
     
     let slices = smoother slices'
-    putStrLn$ show $ map sliceTexCol slices
+    -- putStrLn$ show $ map sliceTexCol slices
+    putStrLn "**************************************"
     zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
     return slices
    
- -- CHEATING CHEATING 
-smoother = id -- smooth . smooth   
+-- CHEATING CHEATING 
+smoother = smooth . smooth 
 smooth [] = [] 
 smooth [x] = [x] 
 smooth (x:y:xs) = (x {sliceTexCol = (sliceTexCol x + 
