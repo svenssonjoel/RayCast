@@ -31,6 +31,8 @@ import Data.Array.Storable
 
 import CExtras
 
+import System.IO.Unsafe
+
 ----------------------------------------------------------------------------
 -- raycasting  in "Cube"-World
 
@@ -102,7 +104,7 @@ castRay2 vc world lights accDist ray =
       if (value > 0) -- ray has struck solid wall
         then 
           do 
-            putStr$ "(" ++ show (posRayDx ray,posRayDy ray) ++ " " ++ show offs ++"," ++ show intersectKind++ ")" 
+            --putStr$ "(" ++ show (posRayDx ray,posRayDy ray) ++ " " ++ show offs ++"," ++ show intersectKind++ ")" 
             ((),inR,inG,inB) <- computeLight px py (lightsPtr lights) (lightsNum lights)
             return (accDist+dist,value,offs,(inR,inG,inB)) 
         else 
@@ -161,5 +163,5 @@ castRay2 vc world lights accDist ray =
     rayYi :: Ray -> Int32
     rayYi = floor . rayY
    
-    
-  
+
+
