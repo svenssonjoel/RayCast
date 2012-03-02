@@ -49,7 +49,11 @@ castRay' :: ViewConfig
 castRay' vc world lights (pos,angle) column = 
   do 
   
-  let ray  = mkRay pos (angle - columnAngle)
+  let --ray = mkRay pos (angle - columnAngle)
+      -- NOTE: forcing ray endpoint to integer locations. 
+      --       
+      ray = Ray pos (mkVector (fromIntegral (floor (-1024*sin (angle - columnAngle))), 
+                               fromIntegral (floor ( 1024*cos (angle - columnAngle)))))
       columnAngle = atan $ fromIntegral col / fromIntegral (vcViewDistance vc)
       col = column - viewportCenterX vc
   
@@ -112,7 +116,8 @@ castRay2 vc world lights accDist ray =
           -- TODO: Glitch changes in nature depending on using (px,py) 
           --       or "posIntersect" as startingpoint for recursive ray. 
           --       This may be where the glitch  originates. 
-          castRay2 vc world lights (accDist+dist) (Ray (mkPoint (fromIntegral px,fromIntegral py)){-posIntersect-} (rayDeltas ray))
+          -- NOTE: For now, call this good enough! 
+          castRay2 vc world lights (accDist+dist) (Ray (Point2D (fromIntegral px) (fromIntegral py)) {-posIntersect-} (rayDeltas ray))
 
         
   where 
@@ -134,12 +139,6 @@ castRay2 vc world lights accDist ray =
     -- the closest one is used. 
     x_intersect = intersect ray x_line 
     y_intersect = intersect ray y_line
-    -- TODO: using intersect (the general one) 
-    --       of intersectX + intersectY both versions 
-    --       show glitches (problem is elsewhere ?)
-    -- TODO: does it have to do with Float precision ? 
-    -- TODO: The glitch is visible already in the version that used int math. (but in a different form) 
-    
     
     (px,py) = (point2DGetXi posIntersect, 
                point2DGetYi posIntersect)
@@ -163,5 +162,4 @@ castRay2 vc world lights accDist ray =
     rayYi :: Ray -> Int32
     rayYi = floor . rayY
    
-
 
