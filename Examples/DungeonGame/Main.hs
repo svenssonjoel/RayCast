@@ -294,7 +294,7 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
   -- process events 
   e <- pollEvent
   
-  
+  {- 
   let (up',down',left',right',b) = 
         case e of 
           (KeyDown k) -> 
@@ -314,9 +314,22 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
               otherwise  -> (up,down,left,right,False)
           Quit -> (up,down,left,right,True) 
           otherwise -> (up,down,left,right,False)
+  -} 
+  let (pos',dir',quit) = 
+        case e of 
+          (KeyDown k) -> 
+            case symKey k of 
+              SDLK_LEFT -> (pos,moveLeft dir,False)
+              SDLK_RIGHT -> (pos,moveRight dir,False) 
+              SDLK_UP -> (moveForward dir pos, dir,False)
+              SDLK_DOWN -> (moveBackward dir pos, dir,False) 
+              SDLK_ESCAPE -> (pos,dir,True)
+              otherwise -> (pos,dir,False) 
+          Quit -> (pos,dir,True)
+          otherwise -> (pos,dir,False)
+          
   
-  -- (r',x',y') <- (moveLeft left' >=> moveRight right' >=> moveUp up' >=> moveDown down') (r,x,y) 
-  dir' <-
+{-  dir' <-
     if left' 
     then moveLeft dir 
     else if right' 
@@ -326,34 +339,37 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
   pos' <- if up'   
           then moveForward dir pos
           else return pos
-  
---   putStrLn$ show dir'
-  -- let pos' = mkPoint (x',y')
-      
-  unless b $ eventLoop vc screen floorTextures wallTextures monster' targ' (up',down',left',right') (dir',pos') ((ly + 128) `mod` 4096)    
+  -}      
+  unless quit $ eventLoop vc screen floorTextures wallTextures monster' targ' (up,down,left,right) (dir',pos') ((ly + 128) `mod` 4096)    
   
   
   -- very crude colision against walls added
   where 
- --    a = 3
-    moveRight :: Monad m =>  ViewDirection -> m ViewDirection
-    moveRight North = return East 
-    moveRight East  = return South
-    moveRight South = return West 
-    moveRight West  = return North 
+    moveRight :: ViewDirection -> ViewDirection
+    moveRight North = East 
+    moveRight East  = South
+    moveRight South = West 
+    moveRight West  = North 
     
-    moveLeft :: Monad m => ViewDirection -> m ViewDirection 
-    moveLeft North = return West 
-    moveLeft West  = return South 
-    moveLeft South = return East 
-    moveLeft East  = return North 
+    moveLeft :: ViewDirection -> ViewDirection 
+    moveLeft North = West 
+    moveLeft West  = South 
+    moveLeft South = East 
+    moveLeft East  = North 
     
     -- TODO: Use grid coords instead of "fine"-coords. 
-    moveForward :: Monad m => ViewDirection -> Point2D -> m Point2D 
-    moveForward North (Point2D x y) = return$ mkPoint (x,y+256) 
-    moveForward East  (Point2D x y) = return$ mkPoint (x+256,y)
-    moveForward South (Point2D x y) = return$ mkPoint (x,y-256) 
-    moveForward West  (Point2D x y) = return$ mkPoint (x-256,y) 
+    moveForward :: ViewDirection -> Point2D -> Point2D 
+    moveForward North (Point2D x y) = mkPoint (x,y+256) 
+    moveForward East  (Point2D x y) = mkPoint (x+256,y)
+    moveForward South (Point2D x y) = mkPoint (x,y-256) 
+    moveForward West  (Point2D x y) = mkPoint (x-256,y) 
+   
+    
+    moveBackward :: ViewDirection -> Point2D -> Point2D 
+    moveBackward North (Point2D x y) = mkPoint (x,y-256) 
+    moveBackward East  (Point2D x y) = mkPoint (x-256,y)
+    moveBackward South (Point2D x y) = mkPoint (x,y+256) 
+    moveBackward West  (Point2D x y) = mkPoint (x+256,y) 
    
     
      
