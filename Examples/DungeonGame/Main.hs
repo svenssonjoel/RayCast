@@ -215,7 +215,6 @@ main = do
                  
   eventLoop vc screen floorTextures wallTextures -- testTexture floorTex
     monsterSprite (mkPoint (4096,4096))
-    (False,False,False,False) -- Keyboard state
     (North,mkPoint (255+127,255+127))
     0
     
@@ -231,11 +230,10 @@ eventLoop :: ViewConfig
              -> [Surface] 
              -> Sprite -- [Sprite]
              -> Point2D
-             -> (Bool,Bool,Bool,Bool) 
              -> (ViewDirection,Point2D) 
              -> Int32
              -> IO ()
-eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right) (dir,pos) ly = do 
+eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly = do 
   
   let (x,y) = (point2DGetX pos, point2DGetY pos)
       lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
@@ -285,36 +283,10 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
       (Vector2D nx ny) = normalize (Vector2D sx sy)
       newPos = spritePos monster `translate` (Vector2D (nx*16) (ny*16)) 
       monster' = Sprite newPos (spriteElevation monster) (spriteDims monster) (spriteTexture monster)
-      
-  --putStrLn$ "position is: " ++ show (newPos)
-  --putStrLn$ "target is: " ++ show targ
-  
-  
   
   -- process events 
   e <- pollEvent
   
-  {- 
-  let (up',down',left',right',b) = 
-        case e of 
-          (KeyDown k) -> 
-            case (symKey k) of 
-              SDLK_LEFT    -> (up,down,True,right,False)
-              SDLK_RIGHT   -> (up,down,left,True,False)
-              SDLK_UP      -> (True,down,left,right,False)
-              SDLK_DOWN    -> (up,True,left,right,False)
-              SDLK_ESCAPE  -> (up,down,left,right,True)
-              otherwise    -> (up,down,left,right,False)
-          (KeyUp k) -> 
-            case (symKey k) of 
-              SDLK_LEFT  -> (up,down,False,right,False)
-              SDLK_RIGHT -> (up,down,left,False,False)
-              SDLK_UP    -> (False,down,left,right,False)
-              SDLK_DOWN  -> (up,False,left,right,False)
-              otherwise  -> (up,down,left,right,False)
-          Quit -> (up,down,left,right,True) 
-          otherwise -> (up,down,left,right,False)
-  -} 
   let (pos',dir',quit) = 
         case e of 
           (KeyDown k) -> 
@@ -328,19 +300,8 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
           Quit -> (pos,dir,True)
           otherwise -> (pos,dir,False)
           
-  
-{-  dir' <-
-    if left' 
-    then moveLeft dir 
-    else if right' 
-         then moveRight dir
-         else return dir
-  
-  pos' <- if up'   
-          then moveForward dir pos
-          else return pos
-  -}      
-  unless quit $ eventLoop vc screen floorTextures wallTextures monster' targ' (up,down,left,right) (dir',pos') ((ly + 128) `mod` 4096)    
+
+  unless quit $ eventLoop vc screen floorTextures wallTextures monster' targ' (dir',pos') ((ly + 128) `mod` 4096)    
   
   
   -- very crude colision against walls added
