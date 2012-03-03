@@ -24,8 +24,6 @@ import MathExtras
 
 ----------------------------------------------------------------------------
 -- rendering routines 
-    
--- renderWalls, to replace renderView
 renderWalls :: World w => ViewConfig 
                -> w
                -> Lights
@@ -37,8 +35,6 @@ renderWalls vc world lights (pos,angle) textures surf =
   do 
     slices <- mapM (castRay vc world lights (pos,angle))  [0..vcWindowWidth vc-1]
     
-    -- putStrLn$ show $ map sliceTexCol slices
-    -- putStrLn "**************************************"
     zipWithM_ (drawSlice textures surf) [0..vcWindowWidth vc-1] slices 
     return slices
    
@@ -59,28 +55,46 @@ drawSlice textures surf col slice =
     textureHeight = surfaceGetHeight texture
         
 
-{-
--- draw a single column into surf
-renderCol vc surf textures ((dist,i,x),c) = 
-  -- vertLine c starty endy color surf
-  -- texturedVLine c starty endy surf  x 0 64 tex
-  -- texVLine c starty endy surf x 0 textureHeight tex
-  
-  texVLineLit (fromIntegral c) 
-              (fromIntegral starty) 
-              (fromIntegral endy) 
-              surf 
-              (fromIntegral x) 
-              0 
-              textureHeight 
-              texture
-              (min 1.0 (128{-lightRadius-}/dist)) 
 
+----------------------------------------------------------------------------
+-- Rendering with multisampling 
+renderWalls3Samples  :: World w => ViewConfig 
+                       -> w
+                       -> Lights
+                       -> View 
+                       -> [Surface] 
+                       -> Surface 
+                       -> IO [Slice] -- Average Slice! 
+renderWalls3Samples vc world lights (pos,angle) textures surf = 
+  do     
+    -- TODO: try offsetting the samples by just 0.5 (needs to change type to float on column though)
+    -- TODO: or implement another "castRay" that returns a multisample Slice of some kind. 
+    slices <- mapM (mapM (castRay vc world lights (pos,angle))) [[x-1,x,x+1]| x <- [0..vcWindowWidth vc-1]]
+    zipWithM (drawSlice3Samples textures surf) [0..vcWindowWidth vc-1] slices
+    -- return (map head slices) -- really compute avg values. 
+
+
+drawSlice3Samples :: [Surface] -> Surface -> Int32 -> [Slice] -> IO Slice
+drawSlice3Samples textures surf col [s1,s2,s3] = 
+  do
+    texVLineLit3S col
+                  avgTop
+                  avgBot
+                  surf 
+                  tc1 tc2 tc3
+                  0 
+                  (fromIntegral (textureHeight)) 
+                  t1 t2 t3
+                  (sliceIntensity s2) -- for now!
+    return $ Slice avgTop avgBot (-1) (-1) (sliceIntensity s2) avgDist
   where 
-    height = floori_ (fromIntegral (vcViewDistance vc* wallHeight vc) / dist)
-    starty = endy - height 
-    endy   = floori_ (fromIntegral (viewportCenterY vc) + ((fromIntegral height) / 2))
-    textureHeight = surfaceGetHeight texture
-    texture = textures P.!! (fromIntegral i - 1) 
--}   
+    avgTop  = (sliceTop s1 + sliceTop s2 + sliceTop s3) `div` 3 
+    avgBot  = (sliceBot s1 + sliceBot s2 + sliceBot s3) `div` 3  
+    avgDist = (sliceDistance s1 + sliceDistance s2 + sliceDistance s3) / 3  
+    (tc1,tc2,tc3) = (sliceTexCol s1, sliceTexCol s2, sliceTexCol s3)
+    (t1,t2,t3)    = (textures P.!! (fromIntegral (sliceTex s1-1)),
+                     textures P.!! (fromIntegral (sliceTex s2-1)),
+                     textures P.!! (fromIntegral (sliceTex s3-1)))
 
+    textureHeight = surfaceGetHeight t1 --just assume this is ok. 
+        

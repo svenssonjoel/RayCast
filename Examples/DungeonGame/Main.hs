@@ -244,12 +244,12 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
                
   withLights lights $ \lights' ->              
     do 
-       sl <- renderWalls vc
-                         testLevelArr 
-                         lights' 
-                         (pos,direction dir) 
-                         wallTextures 
-                         screen
+       sl <- renderWalls3Samples vc
+                                 testLevelArr 
+                                 lights' 
+                                 (pos,direction dir) 
+                                 wallTextures 
+                                 screen
                          
        let dists  = map sliceDistance sl
            bots   = map sliceBot      sl 

@@ -57,6 +57,16 @@ void texturedVLineLit(int32_t x, int32_t y1, int32_t y2, SDL_Surface *surf,
 //		      float intensityG, 
 //		      float intensityB);
 
+void texturedVLineLit3S(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
+		        int32_t tc1,
+			int32_t tc2, 
+			int32_t tc3, int32_t yt0, int32_t yt1, 
+			SDL_Surface *t1,
+			SDL_Surface *t2,
+			SDL_Surface *t3,
+		        RGB *rgb);
+
+
 void renderRItem(Point2D_int *p, Dims2D_int *dim, SDL_Surface *surf, 
                  SDL_Surface *text, 
 		 float depth, float *depths,

@@ -84,6 +84,57 @@ void texturedVLineLit(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
   } 
 }
 
+void texturedVLineLit3S(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
+		        int32_t tc1,
+			int32_t tc2, 
+			int32_t tc3, int32_t yt0, int32_t yt1, 
+			SDL_Surface *t1,
+			SDL_Surface *t2,
+			SDL_Surface *t3,
+		        RGB *rgb){
+  int y; 
+  int sh = surf->h; 
+  int sw = surf->w;
+ 
+  int clipped_y1 = y0 > 0 ? y0 : 0;
+  int clipped_y2 = y1 < sh ? y1 : sh;
+ 
+  int lineHeight = y1 - y0; 
+  int texHeight = yt1 - yt0; 
+
+  int32_t *sp =(int32_t*)surf->pixels;
+  int32_t *tp1 =(int32_t*)t1->pixels;  
+  int32_t *tp2 =(int32_t*)t2->pixels;  
+  int32_t *tp3 =(int32_t*)t3->pixels;  
+
+  
+  float ratio = (float)texHeight / lineHeight;
+
+  for(y = clipped_y1; y<clipped_y2; y++){
+    
+    float ty = (y - y0) * ratio;
+    int32_t p = 0;
+    int32_t tv1 = tp1[texHeight*(int)ty+tc1];
+    int32_t tv2 = tp2[texHeight*(int)ty+tc2];
+    int32_t tv3 = tp3[texHeight*(int)ty+tc3];
+    unsigned char *p_ = (unsigned char*)&p;
+    unsigned char *tv1_ = (unsigned char*)&tv1; 
+    unsigned char *tv2_ = (unsigned char*)&tv2; 
+    unsigned char *tv3_ = (unsigned char*)&tv3; 
+
+
+    p_[0] = rgb->b * ((tv1_[0] + tv2_[0] + tv3_[0]) / 3);
+    p_[1] = rgb->g * ((tv1_[1] + tv2_[1] + tv3_[0]) / 3); 
+    p_[2] = rgb->r * ((tv1_[2] + tv2_[2] + tv3_[0]) / 3);
+    p_[3] = 0; 
+
+    sp[y*sw+x] = p; 
+  } 
+}
+
+
+
+
 /* -----------------------------------------------------------------------------
    Render a textured billboarded 2D sprite  (called RItem in the Haskell code) 
    -------------------------------------------------------------------------- */

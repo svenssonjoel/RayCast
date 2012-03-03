@@ -143,6 +143,32 @@ peekFloat ptr = realToFrac `fmap`  peek ptr
 --    realToFrac   `Float', 
 --    realToFrac   `Float'  } -> `()' id  #}
 
+
+{# fun unsafe texturedVLineLit3S as texVLineLit3S
+  { fromIntegral `Int32' , 
+    fromIntegral `Int32' , 
+    fromIntegral `Int32' ,
+    convSurface* `Surface', 
+    fromIntegral `Int32',
+    fromIntegral `Int32',
+    fromIntegral `Int32',
+    fromIntegral `Int32',
+    fromIntegral `Int32',
+    convSurface* `Surface',
+    convSurface* `Surface',
+    convSurface* `Surface',
+    withRGB*     `RGB'  } -> `()' id #}
+{-
+void texturedVLineLit3S(int32_t x, int32_t y0, int32_t y1, SDL_Surface *surf,
+		        int32_t tc1,
+			int32_t tc2, 
+			int32_t tc3, int32_t yt0, int32_t yt1, 
+			SDL_Surface *t1,
+			SDL_Surface *t2,
+			SDL_Surface *t3,
+		        RGB *rgb);
+
+-}
 --{# fun unsafe renderRItem as renderRItemC 
 -- { fromIntegral `Int' ,
 --   fromIntegral `Int' ,
