@@ -71,7 +71,7 @@ renderWalls3Samples vc world lights (pos,angle) textures surf =
     -- TODO: or implement another "castRay" that returns a multisample Slice of some kind. 
     slices <- mapM (mapM (castRay vc world lights (pos,angle))) [[x-1,x,x+1]| x <- [0..vcWindowWidth vc-1]]
     zipWithM (drawSlice3Samples textures surf) [0..vcWindowWidth vc-1] slices
-    -- return (map head slices) -- really compute avg values. 
+    
 
 
 drawSlice3Samples :: [Surface] -> Surface -> Int32 -> [Slice] -> IO Slice
