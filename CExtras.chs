@@ -106,7 +106,7 @@ withScrDims  p f = with p $ \ptr -> f (castPtr ptr)
 withViewConfig p f = with p $ \ptr -> f (castPtr ptr)
 withRGB p f = with p $ \ptr -> f (castPtr ptr)
                           
-withMap (MapType w arr) f = 
+withMap (MapType w h arr) f = 
   withStorableArray arr $ \ptr -> f (castPtr ptr)
   
 --withIntArray xs = withArray (fmap fromIntegral xs)  

@@ -153,7 +153,7 @@ rayY  r = point2DGetY $ rayStart r
 -- Lines 
 
 data Line = Line !Point2D !Point2D -- 2 points on the line  
-
+          deriving (Eq,Show)
 instance Storable Line where 
   sizeOf (Line p1 p2)  = sizeOf p1 + sizeOf p2
   alignment _ = 4 -- Again ?? 

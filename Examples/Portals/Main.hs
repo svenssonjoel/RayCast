@@ -190,9 +190,12 @@ main = do
   
   let pf = surfaceGetPixelFormat screen
   
-  wallTextures <- sequence [conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
-                           ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"]
+  --wallTextures <- sequence [conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
+  --                         ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"]
                  
+  wallTextures <- sequence [conv pf =<< loadBMP "../../Data/Wall3.bmp"
+                           ,conv pf =<< loadBMP "../../Data/Wall2.bmp"]
+ 
   
   monster <- conv pf =<< loadBMP "../../Data/eye1.bmp"  
   let monsterSprite = Sprite (mkPoint (0,0))
