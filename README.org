@@ -17,6 +17,8 @@
   + Examples/Portals: Walls can be at any angle towards eachother. 
     There are "Portals" to make the number of walls needed to intersect 
     against smaller. 
+  + Examples/DungeonGame: Limited movement (like in the Old Eye of the Beholder games). 
+    (uses the cubeworld renderer). 
 
 * TODOs 
   + Implement an "all-Haskell" version for comparison. 
@@ -31,9 +33,6 @@
   + I want to use the Int32 type to ensure what I do runs the same 
     on 64 and 32bit architectures. 
 
-  + The Haskell floor function was extremely slow. All calls to floor 
-    have been replaced by calls to floor_ and floori_. Both of those 
-    are implemented using the C floorf function and the FFI.
 
 
   
