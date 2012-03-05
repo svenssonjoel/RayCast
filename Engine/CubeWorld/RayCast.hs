@@ -73,8 +73,8 @@ castRay' vc world lights (pos,angle) column =
   
       
       
-  (dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights 0.0 ray   
-  --(dist', texValue, texCol,(inR,inG,inB)) <- castRay3 vc world lights ray     
+  --(dist', texValue, texCol,(inR,inG,inB)) <- castRay2 vc world lights 0.0 ray   
+  (dist', texValue, texCol,(inR,inG,inB)) <- castRay3 vc world lights ray     
   let dist = dist' * cos columnAngle
       height = floor $ fromIntegral (vcViewDistance vc * wallHeight vc) / dist
       top  = bot - height 
