@@ -245,8 +245,8 @@ eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly = do
                
   withLights lights $ \lights' ->              
     do 
-       sl <- renderWalls3Samples vc
-       -- sl <- renderWalls vc
+       --sl <- renderWalls3Samples vc
+       sl <- renderWalls vc
                          testLevelArr 
                          lights' 
                          (pos,direction dir) 
