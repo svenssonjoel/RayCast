@@ -47,7 +47,7 @@ import Foreign.C.Types
 import CExtras
 import MathExtras
 
-import System.IO.Unsafe
+
 ----------------------------------------------------------------------------
 --
     
