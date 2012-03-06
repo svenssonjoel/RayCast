@@ -38,9 +38,6 @@ import System.IO.Unsafe
 ----------------------------------------------------------------------------
 -- raycasting  in "Cube"-World
 
-instance World MapType where 
-  castRay = castRay' 
-
 floorPoint (Point2D x y) = 
   Point2D (fromIntegral (floor x)) 
           (fromIntegral (floor y))
@@ -48,13 +45,13 @@ floorVector (Vector2D x y) =
   Vector2D (fromIntegral (floor x)) 
            (fromIntegral (floor y))
 
-castRay' :: ViewConfig 
+castRay :: ViewConfig 
            -> MapType 
            -> Lights
            -> View 
            -> Int32 
            -> IO Slice 
-castRay' vc world lights (pos,angle) column = 
+castRay vc world lights (pos,angle) column = 
   do 
   
   let --ray = mkRay pos (angle - columnAngle)

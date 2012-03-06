@@ -6,9 +6,15 @@ module Engine.Slice (Slice(..))
 import Engine.RGB
 import Data.Int 
 
+import CExtras
+
 data Slice = Slice {sliceTop :: Int32,
                     sliceBot :: Int32, 
                     sliceTex :: Int32,
                     sliceTexCol :: Int32,
                     sliceIntensity :: RGB, 
                     sliceDistance :: Float}
+             
+             
+
+

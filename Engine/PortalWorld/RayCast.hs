@@ -23,8 +23,8 @@ lightRadius = 256 -- remove
 textureWidth = 256
 
 ---------------------------------------------------------------------------- 
-instance World MapType where 
-  castRay vc world lights (pos,angle) column = 
+
+castRay vc world lights (pos,angle) column = 
     do 
       ((),inR,inG,inB) <- computeLight (floori_ px) (floori_ py) (lightsPtr lights) (lightsNum lights)
       return$ Slice top bot texValue texCol (mkRGB inR inG inB) dist  

@@ -43,6 +43,7 @@ import Engine.World
 
 import Engine.CubeWorld.Map
 import Engine.CubeWorld.RayCast
+import Engine.CubeWorld.Render
 
 import Control.Monad
 import Data.Array
@@ -506,7 +507,7 @@ eventLoop vc screen floorTextures wallTextures monster targ (up,down,left,right)
                
   withLights lights $ \lights' ->              
     do 
-       sl <- renderWalls vc
+       sl <- renderView vc
                          testLevelArr 
                          lights' 
                          (pos,r) 

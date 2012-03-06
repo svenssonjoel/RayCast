@@ -20,7 +20,9 @@ import SDLUtils
 import CExtras
 import MathExtras
 
+{- interface is changing, this file will be removed -} 
 
+{- 
 
 ----------------------------------------------------------------------------
 -- rendering routines 
@@ -98,3 +100,5 @@ drawSlice3Samples textures surf col [s1,s2,s3] =
 
     textureHeight = surfaceGetHeight t1 --just assume this is ok. 
         
+
+-} 

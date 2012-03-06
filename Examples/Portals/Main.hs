@@ -28,8 +28,10 @@ import Engine.Light
 import Engine.ViewConfig
 import Engine.Slice
 import Engine.World
+
 import Engine.PortalWorld.Map 
 import Engine.PortalWorld.RayCast
+import Engine.PortalWorld.Render
 
 
 import CExtras
@@ -250,7 +252,7 @@ eventLoop vc = do
   -- draw all walls
   S.lift$  withLights lights $ \ lights' -> 
     do 
-      slices <- renderWalls vc currWorld lights' (p,r) wallTextures screen
+      slices <- renderView vc currWorld lights' (p,r) wallTextures screen
   
       let dists  = map sliceDistance slices 
   

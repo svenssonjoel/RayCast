@@ -26,6 +26,7 @@ import Engine.World
 
 import Engine.CubeWorld.Map
 import Engine.CubeWorld.RayCast
+import Engine.CubeWorld.Render
 
 import Control.Monad
 import Data.Array
@@ -246,12 +247,13 @@ eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly = do
   withLights lights $ \lights' ->              
     do 
        --sl <- renderWalls3Samples vc
-       sl <- renderWalls vc
-                         testLevelArr 
-                         lights' 
-                         (pos,direction dir) 
-                         wallTextures 
-                         screen
+       --sl <- renderWalls vc
+       --                  testLevelArr 
+       --                  lights' 
+       --                  (pos,direction dir) 
+       --                  wallTextures 
+       --                  screen
+       sl <- renderView vc testLevelArr lights' (pos,direction dir) wallTextures screen
                          
        let dists  = map sliceDistance sl
            bots   = map sliceBot      sl 
