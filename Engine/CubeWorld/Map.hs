@@ -48,3 +48,4 @@ mapGrid (MapType w h _) ww =
            (mkPoint (8192,fromIntegral (y * ww)))        
     
                               
+

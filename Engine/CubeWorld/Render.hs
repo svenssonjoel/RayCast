@@ -1,3 +1,4 @@
+{- 2012 Joel Svensson -} 
 
 module Engine.CubeWorld.Render where
 

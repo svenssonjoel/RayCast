@@ -1,3 +1,5 @@
+{- 2012 Joel Svensson -} 
+
 
 module Engine.PortalWorld.Render where 
 

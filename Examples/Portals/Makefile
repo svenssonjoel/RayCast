@@ -10,6 +10,7 @@ ENGINEFILES = ../../Engine/Math.hs \
               ../../Engine/World.hs \
               ../../Engine/PortalWorld/Map.hs \
               ../../Engine/PortalWorld/RayCast.hs \
+              ../../Engine/PortalWorld/Render.hs \
               ../../CExtras.hs
 
 all: main 

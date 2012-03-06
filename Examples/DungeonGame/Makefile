@@ -10,6 +10,7 @@ ENGINEFILES = ../../Engine/Math.hs \
               ../../Engine/World.hs \
               ../../Engine/CubeWorld/Map.hs \
               ../../Engine/CubeWorld/RayCast.hs \
+              ../../Engine/CubeWorld/Render.hs \
               ../../CExtras.hs
 
 all: main 
