@@ -106,7 +106,8 @@ withScrDims  p f = with p $ \ptr -> f (castPtr ptr)
 withViewConfig p f = with p $ \ptr -> f (castPtr ptr)
 withRGB p f = with p $ \ptr -> f (castPtr ptr)
                           
-withMap (MapType w h arr) f = 
+-- withMap (MapType w h arr) f = 
+withStorableArrayI arr f = 
   withStorableArray arr $ \ptr -> f (castPtr ptr)
   
 --withIntArray xs = withArray (fmap fromIntegral xs)  
@@ -247,7 +248,8 @@ void lerpRow(int32_t wallWidth,
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
-    withMap*     `MapType' , 
+    --withMap*     `MapType' , 
+    withStorableArrayI* `StorableArray Int32 Int32' ,
     withIntArray* `[Int32]' , 
     withPixels*  `[Pixels]', 
     convSurface* `Surface' ,
@@ -266,7 +268,7 @@ void lerpRow(int32_t wallWidth,
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
-    withMap*     `MapType' , 
+    withMap     `MapType' , 
     withIntArray* `[Int32]' , 
     withPixels*  `[Pixels]', 
     convSurface* `Surface' ,
@@ -300,7 +302,8 @@ void lerpRow(int32_t wallWidth,
   { withViewConfig* `ViewConfig' , 
     fromIntegral `Int32' , 
     fromIntegral `Int32' , 
-    withMap*     `MapType' , 
+    -- withMap*     `MapType' , 
+    withStorableArrayI* `StorableArray Int32 Int32' ,
     withIntArray* `[Int32]' , 
     withPixels*  `[Pixels]', 
     convSurface* `Surface' ,

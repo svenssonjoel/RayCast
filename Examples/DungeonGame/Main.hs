@@ -86,12 +86,6 @@ testFloor = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], --0
              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]  --15
             ]
 
-testLevelArr :: MapType
-testLevelArr = unsafePerformIO$ listMap (16,16) testLevel
-
-testLevelFloorArr :: MapType 
-testLevelFloorArr = unsafePerformIO$ listMap (16,16) testFloor
-
 
 ----------------------------------------------------------------------------
 -- Constants 
@@ -109,68 +103,7 @@ direction South = pi
 direction East  = 3*pi/2 
 
     
-----------------------------------------------------------------------------      
--- Cast for floors 
 
-newFloorCast3 :: ViewConfig 
-                 -> MapType 
-                 -> Lights 
-                 -> [Int32]
-                 -> View 
-                 -> [Surface] 
-                 -> Surface 
-                 -> IO ()
-newFloorCast3 vc world lights slices view textures surf = 
-  do 
-    tps <- mapM (\x -> do e <- castPtr `fmap` surfaceGetPixels x; return (e,fromIntegral (surfaceGetWidth x))) textures
-    lerpRows_2 vc world lights slices tps surf rl 
-               
-  where                 
-    rl =  [mkRealLine (newFloorCastPoint vc world view x1 y)                 
-                      (newFloorCastPoint vc world view x2 y) 
-           | y <- [0..(viewportCenterY vc - 1)]]
-                    
-    x1 = 0;
-    x2 = vcWindowWidth vc - 1 
- 
-lerpRows_2 :: ViewConfig 
-             -> MapType 
-             -> Lights
-             -> [Int32] 
-             -> [(Pixels,Int32)] 
-             -> Surface 
-             -> [RealLine] 
-             -> IO ()     
-lerpRows_2 vc world lights slices tps surf rl = 
-         lerpRowsC_  vc -- (wallWidth vc) (modMask vc) (vcWindowWidth vc)
-                  16 16 world 
-                  slices 
-                  (map fst tps) 
-                  surf
-                  (lightsPtr lights)
-                  (lightsNum lights) -- (fromIntegral (length lights))
-                  rl
-
-
-
-newFloorCastPoint :: ViewConfig -> MapType -> View -> Int32 -> Int32 -> (Float,Float)    
-newFloorCastPoint vc world (pos,angle) x y = 
-  ps
-  where 
-    radians = angle - columnAngle
-    columnAngle = atan (fromIntegral (x {-column-} - viewportCenterX vc) / fromIntegral (vcViewDistance vc))
-    
-    ps = ((point2DGetX pos) - distance * sin radians
-         ,(point2DGetY pos) + distance * cos radians)
-    
-    distance = rowDistance y 
-    
-    ratioHeightRow row = 128 {-fromIntegral viewerHeight-} / fromIntegral row 
-                         
-    
-    rowDistance row = ratioHeightRow row * fromIntegral (vcViewDistance vc) / cos columnAngle
-
- 
 ----------------------------------------------------------------------------
 -- Main !
 main = do 
@@ -208,6 +141,10 @@ main = do
                             ,conv pf =<< loadBMP "../../Data/Floor3.bmp"
                             ,conv pf =<< loadBMP "../../Data/Brunn.bmp"]
   
+
+  
+  testLevelArr <- mkMap (16,16) testLevel testFloor testFloor wallTextures floorTextures floorTextures
+
   
   monster <- conv pf =<< loadBMP "../../Data/Eye1.bmp"  
   let monsterSprite = Sprite (mkPoint (5*256+128,1*256+128))
@@ -221,6 +158,7 @@ main = do
     monsterSprite (mkPoint (4096,4096))
     (North,mkPoint (255+127,255+127))
     0
+    testLevelArr
     
   quit
     where 
@@ -236,8 +174,9 @@ eventLoop :: ViewConfig
              -> Point2D
              -> (ViewDirection,Point2D) 
              -> Int32
+             -> MapType
              -> IO ()
-eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly = do 
+eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly level = do 
   
   let (x,y) = (point2DGetX pos, point2DGetY pos)
       lights = ([mkLight (x,y) (1.0,1.0,1.0)] ++ 
@@ -246,29 +185,19 @@ eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly = do
                
   withLights lights $ \lights' ->              
     do 
-       --sl <- renderWalls3Samples vc
-       --sl <- renderWalls vc
-       --                  testLevelArr 
-       --                  lights' 
-       --                  (pos,direction dir) 
-       --                  wallTextures 
-       --                  screen
-       sl <- renderView vc testLevelArr lights' (pos,direction dir) wallTextures screen
+       
+       sl <- renderView vc level lights' (pos,direction dir) wallTextures screen
                          
        let dists  = map sliceDistance sl
-           bots   = map sliceBot      sl 
-       newFloorCast3 vc testLevelFloorArr lights' bots (pos,direction dir) floorTextures screen                                     
-
-       
        let monsterTfrmd = viewTransformSprite vc (pos,direction dir) monster
              --sortRItems $ 
              --catMaybes $ 
              --map (viewTransformSprite vc (pos,r)) monster    
        
        withZBuffer dists $ \zbuf -> maybe (return ()) (renderRItem screen zbuf lights') monsterTfrmd
---         case monsterTfrmd of 
- --          Nothing -> return () 
-  --         (Just m) -> renderRItem screen zbuf lights' m
+   --         case monsterTfrmd of 
+   --          Nothing -> return () 
+   --         (Just m) -> renderRItem screen zbuf lights' m
          --sequence_ $ map (renderRItem screen zbuf lights') monsterTfrmd
                     
                              
@@ -307,7 +236,7 @@ eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly = do
           otherwise -> (pos,dir,False)
           
 
-  unless quit $ eventLoop vc screen floorTextures wallTextures monster' targ' (dir',pos') ((ly + 128) `mod` 4096)    
+  unless quit $ eventLoop vc screen floorTextures wallTextures monster' targ' (dir',pos') ((ly + 128) `mod` 4096) level   
   
   
   -- very crude colision against walls added
