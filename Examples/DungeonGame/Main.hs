@@ -238,8 +238,6 @@ eventLoop vc screen floorTextures wallTextures monster targ (dir,pos) ly level =
 
   unless quit $ eventLoop vc screen floorTextures wallTextures monster' targ' (dir',pos') ((ly + 128) `mod` 4096) level   
   
-  
-  -- very crude colision against walls added
   where 
     moveRight :: ViewDirection -> ViewDirection
     moveRight North = East 
