@@ -140,21 +140,26 @@ main = do
   
   let pf = surfaceGetPixelFormat screen
                        
-  --wallTextures <- sequence [conv pf =<< loadBMP "Data/textureLarge1.bmp"
-  --                         ,conv pf =<< loadBMP "Data/textureLarge2.bmp"
-  --                         ,conv pf =<< loadBMP "Data/textureLarge1.bmp"
-  --                         ,conv pf =<< loadBMP "Data/textureLarge1.bmp"]
+  wallTextures <- sequence [conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"
+                           ,conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "../../Data/textureLarge1.bmp"]
                  
   -- These textures are not in the repo yet.          
-  wallTextures <- sequence [conv pf =<< loadBMP "../../Data/Wall3.bmp"
-                           ,conv pf =<< loadBMP "../../Data/Wall2.bmp"
-                           ,conv pf =<< loadBMP "../../Data/Door.bmp"
-                           ,conv pf =<< loadBMP "../../Data/DoorOpen.bmp"]
+  -- wallTextures <- sequence [conv pf =<< loadBMP "../../Data/Wall3.bmp"
+  --                          ,conv pf =<< loadBMP "../../Data/Wall2.bmp"
+  --                          ,conv pf =<< loadBMP "../../Data/Door.bmp"
+  --                          ,conv pf =<< loadBMP "../../Data/DoorOpen.bmp"]
    
-  floorTextures <- sequence [conv pf =<< loadBMP "../../Data/Floor1.bmp"
-                            ,conv pf =<< loadBMP "../../Data/Floor2.bmp"
-                            ,conv pf =<< loadBMP "../../Data/Floor3.bmp"
-                            ,conv pf =<< loadBMP "../../Data/Brunn.bmp"]
+  -- floorTextures <- sequence [conv pf =<< loadBMP "../../Data/Floor1.bmp"
+  --                           ,conv pf =<< loadBMP "../../Data/Floor2.bmp"
+  --                           ,conv pf =<< loadBMP "../../Data/Floor3.bmp"
+  --                           ,conv pf =<< loadBMP "../../Data/Brunn.bmp"]
+
+  floorTextures <- sequence [conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
+                            ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"
+                            ,conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
+                            ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"]
   
   testLevelArr <- mkMap (16,16) testLevel testFloor testFloor wallTextures floorTextures floorTextures
   
@@ -171,7 +176,7 @@ main = do
   --                          ,conv pf =<< loadBMP "Data/floor4.bmp" ]
 
   
-  monster <- conv pf =<< loadBMP "../../Data/Eye1.bmp"  
+  monster <- conv pf =<< loadBMP "../../Data/eye1.bmp"  
   let monsterSprite = Sprite (mkPoint (5*256+128,1*256+128))
                               0
                               (256,256) 

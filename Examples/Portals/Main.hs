@@ -195,8 +195,11 @@ main = do
   --wallTextures <- sequence [conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
   --                         ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"]
                  
-  wallTextures <- sequence [conv pf =<< loadBMP "../../Data/Wall3.bmp"
-                           ,conv pf =<< loadBMP "../../Data/Wall2.bmp"]
+  --wallTextures <- sequence [conv pf =<< loadBMP "../../Data/Wall3.bmp"
+  --                         ,conv pf =<< loadBMP "../../Data/Wall2.bmp"]
+
+  wallTextures <- sequence [conv pf =<< loadBMP "../../Data/textureLarge1.bmp"
+                           ,conv pf =<< loadBMP "../../Data/textureLarge2.bmp"]
  
   
   monster <- conv pf =<< loadBMP "../../Data/eye1.bmp"  
